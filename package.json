@@ -1,14 +1,17 @@
 {
-  "dependencies": {
-    "express": "^5.2.1"
-  },
   "name": "thietkewebnangcao",
   "version": "1.0.0",
   "description": "",
-  "main": "app.js",
-  "devDependencies": {},
+  "main": "src/server.js",
+  "type": "module",
   "scripts": {
+    "dev": "nodemon src/server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "mysql2": "^3.22.3"
   },
   "repository": {
     "type": "git",
@@ -17,9 +20,11 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
   "bugs": {
     "url": "https://github.com/dkien08/Thietkewebnangcao/issues"
   },
-  "homepage": "https://github.com/dkien08/Thietkewebnangcao#readme"
+  "homepage": "https://github.com/dkien08/Thietkewebnangcao#readme",
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
 }
