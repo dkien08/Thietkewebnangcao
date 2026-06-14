@@ -4,7 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { UserModule } from './user/user.module';
 import { User } from './user/user.entity';
-
+import { ContractModule } from './contract/contract.module';
 @NestModule({
   imports: [
     ConfigModule.forRoot({
@@ -44,6 +44,7 @@ import { User } from './user/user.entity';
     }),
     
     UserModule,
+    ContractModule,
   ],
 })
 export class AppModule {}
