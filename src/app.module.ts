@@ -1,13 +1,15 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { UserModule } from './user/user.module';
 import { User } from './user/user.entity';
-import { ContractModule } from './contract/contract.module';
-
-// Đã sửa đường dẫn thành 'rooms' khớp với cấu trúc thư mục của bạn
 import { Room } from './rooms/room.entity';
+import {Contract} from './contract/contract.entity';
+import { Favourite } from './favourite/favourite.entity';
+import { UserModule } from './user/user.module';
+import { ContractModule } from './contract/contract.module';
 import { RoomModule } from './rooms/room.module';
+import { FavouriteModule } from './favourite/favourite.module';
+
 
 @Module({
   imports: [
@@ -20,7 +22,6 @@ import { RoomModule } from './rooms/room.module';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
-        // Đọc chính xác cấu trúc biến từ file .env của bạn
         const host = configService.get<string>('DB_HOST')
         const port = configService.get<number>('DB_PORT')
         const username = configService.get<string>('DB_USER')
@@ -37,14 +38,12 @@ import { RoomModule } from './rooms/room.module';
           username: username,
           password: password,
           database: database,
-          entities: [User, Room],
-          synchronize: false, // Không tự động sync làm ảnh hưởng database chung của nhóm
+          entities: [User, Room,Contract,Favourite],
+          synchronize: false,
           logging: true,
-
-          // Cấu hình chống nghẽn kết nối mạng đám mây
           retryAttempts: 2,
           retryDelay: 3000,
-          connectTimeout: 30000, // Tăng lên 30 giây để đảm bảo kết nối tới Aiven Cloud ổn định
+          connectTimeout: 30000, 
 
           ssl: {
             rejectUnauthorized: false,
@@ -56,6 +55,7 @@ import { RoomModule } from './rooms/room.module';
     UserModule,
     ContractModule,
     RoomModule,
+    FavouriteModule
   ],
 })
 export class AppModule { }
