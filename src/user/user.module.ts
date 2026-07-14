@@ -1,21 +1,19 @@
-// File: src/user/user.module.ts
 import { Module } from '@nestjs/common';
-import { JwtModule } from '@nestjs/jwt';
-import { PassportModule } from '@nestjs/passport';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { User } from '../user/user.entity';
 import { UserService } from './user.service';
 import { UserController } from './user.controller';
-import { JwtStrategy } from '../common/strategies/jwt.strategy';
+import { JwtModule} from '@nestjs/jwt';
 
 @Module({
-  imports: [
-    PassportModule,
-    JwtModule.register({
-      secret: process.env.JWT_SECRET,
-      signOptions: { expiresIn: '1d' },
-    }),
-  ],
+  imports: [TypeOrmModule.forFeature([User]),
+  JwtModule.register({
+    secret:'Kienduc',
+    signOptions:{expiresIn:'1h'},
+  }),
+],
+  providers: [UserService],
   controllers: [UserController],
-  providers: [UserService, JwtStrategy], // Đăng ký JwtStrategy
-  exports: [PassportModule, JwtModule],
+  exports: [UserService],
 })
 export class UserModule {}
