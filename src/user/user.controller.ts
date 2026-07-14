@@ -2,7 +2,7 @@ import { Controller, Get, Post, Put, Delete, Body, Param } from '@nestjs/common'
 import { UserService } from './user.service';
 import { User } from './user.entity';
 
-@Controller('users') // Đường dẫn sẽ là: http://localhost:3000/api/users
+@Controller('users')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
