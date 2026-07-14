@@ -1,5 +1,6 @@
-import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
+import { NestFactory } from "@nestjs/core";
+import { AppModule } from "./app.module";
+import cookieParser from "cookie-parser";
 
 async function bootstrap() {
   // Khởi tạo ứng dụng NestJS từ AppModule gốc
@@ -8,13 +9,13 @@ async function bootstrap() {
   // Bật CORS để nếu sau này có làm giao diện (Frontend) gọi API sẽ không bị chặn
   app.enableCors();
 
-  // Cấu hình tiền tố cho toàn bộ API (Ví dụ: http://localhost:3000/api/users)
-  app.setGlobalPrefix('api');
+  app.use(cookieParser());
 
-  // Chạy server trên cổng 3000 (hoặc cổng cấu hình trong file .env)
-  const port = process.env.PORT || 3000;
+  app.setGlobalPrefix("api");
+
+  const port = process.env.PORT || 3001;
   await app.listen(port);
-  
-  console.log(`🚀 Server đang chạy mượt mà tại: http://localhost:${port}/api`);
+
+  console.log(`🚀 Server đang chạy tại: http://localhost:${port}/api`);
 }
 bootstrap();
