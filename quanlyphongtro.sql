@@ -60,7 +60,7 @@ CREATE TABLE `rental_contracts` (
 -- -------------------------------------------------------------------------
 -- 4. ĐỐI TƯỢNG: FAVORITES (DANH SÁCH PHÒNG YÊU THÍCH)
 -- -------------------------------------------------------------------------
-CREATE TABLE `favorites` (
+CREATE TABLE `favourites` (
     `user_id` INT NOT NULL,
     `room_id` INT NOT NULL,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

@@ -1,12 +1,15 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { UserModule } from './user/user.module';
 import { User } from './user/user.entity';
-import { ContractModule } from './contract/contract.module';
-
 import { Room } from './rooms/room.entity';
+import {Contract} from './contract/contract.entity';
+import { Favourite } from './favourite/favourite.entity';
+import { UserModule } from './user/user.module';
+import { ContractModule } from './contract/contract.module';
 import { RoomModule } from './rooms/room.module';
+import { FavouriteModule } from './favourite/favourite.module';
+
 
 @Module({
   imports: [
@@ -35,12 +38,12 @@ import { RoomModule } from './rooms/room.module';
           username: username,
           password: password,
           database: database,
-          entities: [User, Room],
+          entities: [User, Room,Contract,Favourite],
           synchronize: false,
           logging: true,
           retryAttempts: 2,
           retryDelay: 3000,
-          connectTimeout: 30000,
+          connectTimeout: 30000, 
 
           ssl: {
             rejectUnauthorized: false,
@@ -52,6 +55,7 @@ import { RoomModule } from './rooms/room.module';
     UserModule,
     ContractModule,
     RoomModule,
+    FavouriteModule
   ],
 })
 export class AppModule { }
