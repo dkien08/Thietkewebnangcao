@@ -1,0 +1,9 @@
+{
+  "features": {
+    "ghcr.io/devcontainers-extra/features/mysql-homebrew:1": {
+      "version": "1.0.21",
+      "resolved": "ghcr.io/devcontainers-extra/features/mysql-homebrew@sha256:40b85fe74a4aad094599d7df1bc5e1958b5ca1f5611a61fc2fc1275c54cdabd7",
+      "integrity": "sha256:40b85fe74a4aad094599d7df1bc5e1958b5ca1f5611a61fc2fc1275c54cdabd7"
+    }
+  }
+}
