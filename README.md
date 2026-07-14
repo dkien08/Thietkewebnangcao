@@ -1,10 +1,13 @@
+## 📂 Cấu trúc thư mục dự án (Project Folder Structure)
+
+```text
 Thietkewebnangcao-main/               # Thư mục gốc của dự án
 ├── .devcontainer/                    # Cấu hình môi trường Docker cho dự án
 │   ├── devcontainer.json
 │   └── docker-compose.yml
 ├── node_modules/                     # Thư mục chứa các thư viện đã cài đặt (Tự động sinh)
 ├── src/                              # Thư mục chứa toàn bộ mã nguồn ứng dụng
-│   ├── config/                       # Cấu hình hệ thống (Database, JWT, Mail...)
+│   ├── config/                       # Cấu hình hệ thống (Database, JWT...)
 │   │   └── database.config.ts        
 │   │
 │   ├── user/                         # MODULE QUẢN LÝ NGƯỜI DÙNG
@@ -36,20 +39,21 @@ Thietkewebnangcao-main/               # Thư mục gốc của dự án
 │   │   ├── contract.service.ts       # Tầng xử lý logic duyệt và đồng bộ trạng thái phòng
 │   │   └── contract.module.ts
 │   │
-│   ├── favorite/                     # MODULE PHÒNG TRỌ YÊU THÍCH (MỚI BỔ SUNG)
+│   ├── favorite/                     # MODULE PHÒNG TRỌ YÊU THÍCH
 │   │   ├── dto/
-│   │   │   └── toggle-favorite.dto.ts # DTO chứa roomId khi bấm thích/bỏ thích
+│   │   │   └── toggle-favorite.dto.ts # DTO chứa dữ liệu yêu cầu khi lưu phòng thích
 │   │   ├── entities/
 │   │   │   └── favorite.entity.ts     # Entity tương ứng bảng favorites trong DB
-│   │   ├── favorite.controller.ts    # Nhận Request (F07 - Lưu, F18 - Xem danh sách yêu thích)
-│   │   ├── favorite.service.ts       # Logic thêm/xóa khỏi danh sách, truy vấn phòng yêu thích
+│   │   ├── favorite.controller.ts    # Nhận Request (F07 - Lưu, F18 - Xem danh sách thích)
+│   │   ├── favorite.service.ts       # Logic thêm/xóa, truy vấn danh sách yêu thích
 │   │   └── favorite.module.ts
 │   │
-│   ├── app.module.ts                 # Module gốc của hệ thống (Liên kết User, Rooms, Contract, Favorite)
-│   └── main.ts                       # Điểm khởi chạy của ứng dụng (Khởi tạo NestFactory, lắng nghe Port)
+│   ├── app.module.ts                 # Module gốc liên kết toàn bộ hệ thống
+│   └── main.ts                       # Điểm khởi chạy của ứng dụng (Khởi tạo NestFactory)
 │
-├── .env                              # Lưu trữ biến môi trường bảo mật (Không push lên Github)
-├── .gitignore                        # Khai báo các file/thư mục Git cần bỏ qua (nhu node_modules, .env)
-├── package.json                      # Quản lý thông tin dự án, scripts chạy và danh sách thư viện
+├── .env                              # Lưu trữ biến môi trường bảo mật (Không push lên GitHub)
+├── .gitignore                        # Khai báo các file/thư mục Git cần bỏ qua
+├── package.json                      # Quản lý thông tin dự án, scripts và thư viện cài đặt
 ├── tsconfig.json                     # Cấu hình trình biên dịch TypeScript
 └── quanlyphongtro.sql                # File đặc tả cơ sở dữ liệu mẫu
+\```
