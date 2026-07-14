@@ -2,12 +2,12 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { User } from './user/user.entity';
-import { Room } from './rooms/room.entity';
+import { Room } from './room/room.entity';
 import {Contract} from './contract/contract.entity';
 import { Favourite } from './favourite/favourite.entity';
 import { UserModule } from './user/user.module';
 import { ContractModule } from './contract/contract.module';
-import { RoomModule } from './rooms/room.module';
+import { RoomModule } from './room/room.module';
 import { FavouriteModule } from './favourite/favourite.module';
 
 

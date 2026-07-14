@@ -10,7 +10,7 @@ import {
 import { RoomService } from "./room.service";
 import { Room } from "./room.entity";
 
-@Controller("rooms") // Đường dẫn API: http://localhost:3000/rooms
+@Controller("rooms")
 export class RoomController {
   constructor(private readonly roomService: RoomService) {}
 

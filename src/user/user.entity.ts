@@ -1,6 +1,6 @@
-import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn } from "typeorm";
 
-@Entity('users')
+@Entity("users")
 export class User {
   @PrimaryGeneratedColumn()
   id!: number;
@@ -14,6 +14,9 @@ export class User {
   @Column({ length: 15 })
   phone!: string;
 
-  @Column({ type: 'enum', enum: ['Tenant', 'Landlord'], default: 'Tenant' })
+  @Column({ type: "enum", enum: ["Tenant", "Landlord"], default: "Tenant" })
   role!: string;
+
+  @Column({ type: "varchar", default: "Tenant" })
+  currentMode!: string;
 }
