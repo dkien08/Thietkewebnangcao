@@ -14,7 +14,7 @@ export class User {
   @Column({ length: 15 })
   phone!: string;
 
-  @Column({ type: "enum", enum: ["Tenant", "Landlord"], default: "Tenant" })
+  @Column({ type: "enum", enum: ["Tenant", "Landlord", "Admin"], default: "Tenant" })
   role!: string;
 
   @Column({ type: "varchar", default: "Tenant" })

@@ -10,6 +10,7 @@ import { User } from "./user.entity";
 import { JwtService } from "@nestjs/jwt";
 import * as bcrypt from "bcrypt";
 import { UpdateUserDto } from "./dto/update-user.dto"; 
+import { ChangePasswordDto } from "./dto/change-password.dto"; 
 
 @Injectable()
 export class UserService {
@@ -40,30 +41,56 @@ export class UserService {
     return result;
   }
 
-  // 3. UPDATE (Bảo mật tuyệt đối, tránh sửa đè id/role)
+  // 3. UPDATE (Bảo mật tuyệt đối, chỉ cho sửa các thông tin cá nhân thông thường)
   async update(
     id: number,
     updateData: UpdateUserDto,
   ): Promise<Omit<User, "password">> {
     await this.findOne(id); // Kiểm tra tồn tại
 
-    const { password, phone } = updateData;
+    const { phone } = updateData;
     const dataToUpdate: any = {};
 
     if (phone) dataToUpdate.phone = phone;
-
-    if (password) {
-      const salt = await bcrypt.genSalt(10);
-      dataToUpdate.password = await bcrypt.hash(password, salt);
-    }
 
     if (Object.keys(dataToUpdate).length > 0) {
       await this.userRepository.update(id, dataToUpdate);
     }
     
-    return this.findOne(id);
+    return this.findOne(id); // Trả về thông tin mới không kèm password
   }
 
+  // 👉 F03.3: ĐỔI MẬT KHẨU CHÍNH CHỦ (Cần xác thực mật khẩu cũ)
+  async changePassword(
+    userId: number,
+    dto: ChangePasswordDto,
+  ): Promise<{ message: string }> {
+    const { oldPassword, newPassword } = dto;
+
+    // 1. Tìm user trong DB (lấy cả password gốc để so sánh)
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException("Không tìm thấy người dùng");
+    }
+
+    // 2. So khớp mật khẩu cũ gửi lên với mật khẩu đã mã hóa trong DB
+    const isMatch = await bcrypt.compare(oldPassword, user.password);
+    if (!isMatch) {
+      throw new BadRequestException("Mật khẩu cũ không chính xác!");
+    }
+
+    // 3. Nếu trùng mật khẩu cũ thì không cho đổi (tùy chọn bảo mật thêm)
+    if (oldPassword === newPassword) {
+      throw new BadRequestException("Mật khẩu mới không được trùng với mật khẩu cũ!");
+    }
+
+    // 4. Mã hóa mật khẩu mới và lưu lại
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(newPassword, salt);
+    await this.userRepository.save(user);
+
+    return { message: "Thay đổi mật khẩu thành công!" };
+  }
   // 4. DELETE
   async remove(id: number): Promise<{ message: string }> {
     await this.findOne(id);

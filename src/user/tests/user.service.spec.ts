@@ -1,24 +1,22 @@
 import { Test, TestingModule } from "@nestjs/testing";
-import { UserService } from "./user.service";
+import { UserService } from "../user.service";
 import { getRepositoryToken } from "@nestjs/typeorm";
-import { User } from "./user.entity";
+import { User } from "../user.entity";
 import { JwtService } from "@nestjs/jwt";
 import {
   BadRequestException,
   NotFoundException,
   UnauthorizedException,
 } from "@nestjs/common";
-import bcrypt from "bcrypt";
+import * as bcrypt from "bcrypt";
 import { describe, beforeEach, it, expect, jest } from "@jest/globals";
 
-// Giả lập (mock) thư viện bcrypt bằng cú pháp an toàn tuyệt đối cho mọi trình biên dịch
-jest.mock("bcrypt", () => {
-  return {
-    genSalt: jest.fn().mockImplementation(() => Promise.resolve("salt")),
-    hash: jest.fn().mockImplementation(() => Promise.resolve("hashedpassword")),
-    compare: jest.fn(),
-  };
-});
+// Giả lập (mock) thư viện bcrypt để kiểm soát hoàn toàn việc mã hóa/so khớp mật khẩu
+jest.mock("bcrypt", () => ({
+  genSalt: jest.fn().mockImplementation(() => Promise.resolve("salt")),
+  hash: jest.fn().mockImplementation(() => Promise.resolve("hashedpassword")),
+  compare: jest.fn(),
+}));
 
 describe("UserService", () => {
   let service: UserService;
@@ -69,6 +67,7 @@ describe("UserService", () => {
         password: "hashedpassword",
         phone: "0123456789",
         role: "Tenant",
+        currentMode: "Tenant",
       };
       mockUserRepository.findOne.mockReturnValue(mockUser);
 
@@ -98,7 +97,6 @@ describe("UserService", () => {
         role: "Tenant",
       };
 
-      // Giả lập chưa có user nào trùng tên trong DB
       mockUserRepository.findOne.mockReturnValue(null);
 
       const result = await service.register(registerDto);
@@ -106,7 +104,7 @@ describe("UserService", () => {
       expect(result).toHaveProperty("message", "Đăng ký thành công");
       expect(result.user).toBeDefined();
       expect(result.user.username).toEqual("newuser");
-      expect((result.user as any).password).toBeUndefined(); // Bảo mật: Không được trả về password
+      expect((result.user as any).password).toBeUndefined();
     });
 
     it("nên ném lỗi BadRequestException nếu username đã tồn tại", async () => {
@@ -116,7 +114,6 @@ describe("UserService", () => {
         phone: "0987654321",
       };
 
-      // Giả lập đã có user trùng tên trong DB
       mockUserRepository.findOne.mockReturnValue({
         id: 1,
         username: "existinguser",
@@ -140,12 +137,12 @@ describe("UserService", () => {
         username: "kien",
         password: "hashedpassword",
         role: "Tenant",
+        currentMode: "Tenant",
         phone: "0123456789",
       };
       mockUserRepository.findOne.mockReturnValue(mockUser);
 
-      // Giả lập bcrypt.compare trả về true (khớp mật khẩu)
-      (bcrypt.compare as jest.Mock).mockResolvedValue(true as never);
+      (bcrypt.compare as jest.Mock).mockImplementation(() => Promise.resolve(true));
 
       const result = await service.login(loginDto);
 
@@ -155,7 +152,7 @@ describe("UserService", () => {
     });
 
     it("nên ném lỗi UnauthorizedException nếu username không tồn tại", async () => {
-      mockUserRepository.findOne.mockReturnValue(null); // Không tìm thấy user
+      mockUserRepository.findOne.mockReturnValue(null);
 
       await expect(service.login(loginDto)).rejects.toThrow(
         UnauthorizedException,
@@ -166,8 +163,7 @@ describe("UserService", () => {
       const mockUser = { id: 1, username: "kien", password: "hashedpassword" };
       mockUserRepository.findOne.mockReturnValue(mockUser);
 
-      // Giả lập bcrypt.compare trả về false (sai mật khẩu)
-      (bcrypt.compare as jest.Mock).mockResolvedValue(false as never);
+      (bcrypt.compare as jest.Mock).mockImplementation(() => Promise.resolve(false));
 
       await expect(service.login(loginDto)).rejects.toThrow(
         UnauthorizedException,
@@ -175,18 +171,14 @@ describe("UserService", () => {
     });
   });
 
-  // ==========================================// ==========================================
+  // ==========================================
   // 4. TEST CHỨC NĂNG SWITCH MODE
   // ==========================================
   describe("switchMode", () => {
     it("nên chuyển sang Landlord nếu currentMode đang là Tenant", async () => {
       const mockUser = { id: 1, username: "kien", currentMode: "Tenant" };
       mockUserRepository.findOne.mockReturnValue(mockUser);
-
-      // Giả lập lưu user sau khi thay đổi mode thành công
-      mockUserRepository.save.mockImplementation((u: any) =>
-        Promise.resolve(u),
-      );
+      mockUserRepository.save.mockImplementation((u: any) => Promise.resolve(u));
 
       const result = await service.switchMode(1);
 
@@ -197,11 +189,7 @@ describe("UserService", () => {
     it("nên chuyển sang Tenant nếu currentMode đang là Landlord", async () => {
       const mockUser = { id: 1, username: "kien", currentMode: "Landlord" };
       mockUserRepository.findOne.mockReturnValue(mockUser);
-
-      // Giả lập lưu user sau khi thay đổi mode thành công
-      mockUserRepository.save.mockImplementation((u: any) =>
-        Promise.resolve(u),
-      );
+      mockUserRepository.save.mockImplementation((u: any) => Promise.resolve(u));
 
       const result = await service.switchMode(1);
 
@@ -209,8 +197,7 @@ describe("UserService", () => {
       expect(result.message).toContain("Đã chuyển sang chế độ Người thuê");
     });
 
-    it("nên ném lỗi NotFoundException nếu không tìm thấy người dùng để switch", async () => {
-      // Giả lập không tìm thấy user trong db
+    it("nên ném lỗi NotFoundException nếu không tìm thấy người dùng", async () => {
       mockUserRepository.findOne.mockReturnValue(null);
 
       await expect(service.switchMode(99)).rejects.toThrow(NotFoundException);
