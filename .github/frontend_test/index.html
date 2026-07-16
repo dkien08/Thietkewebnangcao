@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My App - Favourites Manager</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header class="header">
+        <div class="logo">MY APP</div>
+        <button class="menu-toggle" id="menu-toggle">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+        <nav class="nav-menu" id="nav-menu">
+            <a href="#home">Home</a>
+            <a href="#link">Link</a>
+            <div class="dropdown">
+                <a href="#options" class="dropdown-toggle">Options ▾</a>
+            </div>
+        </nav>
+    </header>
+
+    <section class="banner" id="home">
+        <div class="banner-text">
+            <h1>Good Afternoon</h1>
+            <p>Spaces and Cybers.</p>
+        </div>
+        <div class="banner-dots">
+            <span class="dot active"></span>
+            <span class="dot"></span>
+            <span class="dot"></span>
+        </div>
+    </section>
+
+    <main class="content-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Name / Room</th>
+                    <th>ID</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody id="table-body">
+                <tr>
+                    <td colspan="3" style="text-align: center; color: #757575;">
+                        Đang tải danh sách dữ liệu yêu thích...
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </main>
+
+    <footer class="footer">
+        <p>💡 Hanoi, August 2026</p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>

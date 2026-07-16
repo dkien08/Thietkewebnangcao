@@ -9,7 +9,7 @@ import { UserModule } from './user/user.module';
 import { ContractModule } from './contract/contract.module';
 import { RoomModule } from './room/room.module';
 import { FavouriteModule } from './favourite/favourite.module';
-
+import { ReportModule } from './report/report.module';
 
 @Module({
   imports: [
@@ -55,7 +55,8 @@ import { FavouriteModule } from './favourite/favourite.module';
     UserModule,
     ContractModule,
     RoomModule,
-    FavouriteModule
+    FavouriteModule,
+    ReportModule,
   ],
 })
 export class AppModule { }
