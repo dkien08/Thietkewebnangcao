@@ -30,31 +30,40 @@ class TestThrottlerGuard extends ThrottlerGuard {
   }
 }
 
-describe("UserController (Rate Limiting)", () => {
+describe("UserController (Rate Limiting & Logic)", () => {
   let app: INestApplication;
+  let moduleFixture: TestingModule;
   let mockUserService: any;
 
   beforeEach(async () => {
     mockUserService = {
-      register: jest
-        .fn()
-        .mockResolvedValue({
-          message: "Đăng ký thành công",
-        } as unknown as never),
-      login: jest
-        .fn()
-        .mockResolvedValue({
-          message: "Đăng nhập thành công",
-        } as unknown as never),
+      register: jest.fn(() => 
+        Promise.resolve({ message: "Đăng ký thành công" })
+      ),
+      login: jest.fn(() => 
+        Promise.resolve({ message: "Đăng nhập thành công", accessToken: "mock_token" })
+      ),
+      findOne: jest.fn(() => 
+        Promise.resolve({ id: 1, username: "kien" })
+      ),
+      update: jest.fn(() => 
+        Promise.resolve({ id: 1, username: "kien" })
+      ),
+      switchMode: jest.fn(() => 
+        Promise.resolve({ message: "Chuyển đổi vai trò thành công" })
+      ),
+      changePassword: jest.fn(() => 
+        Promise.resolve({ message: "Đổi mật khẩu thành công!" })
+      ),
     };
 
-    const moduleFixture: TestingModule = await Test.createTestingModule({
+    moduleFixture = await Test.createTestingModule({
       imports: [
         ThrottlerModule.forRoot([
           {
             name: "default",
             ttl: 60000,
-            limit: 5, // Đặt thẳng bằng 5 cho đồng bộ với Controller thật
+            limit: 5, // Đồng bộ với giới hạn của Controller thật
           },
         ]),
       ],
@@ -96,7 +105,6 @@ describe("UserController (Rate Limiting)", () => {
       };
       const testIp = "127.0.0.1";
 
-      // Chỉ gửi 1 lần duy nhất để chắc chắn pass qua limit
       await request(app.getHttpServer())
         .post("/auth/register")
         .set("X-Forwarded-For", testIp)
@@ -109,11 +117,10 @@ describe("UserController (Rate Limiting)", () => {
         username: "kientest",
         password: "password123",
       };
-      const testIp = "127.0.0.2"; // Dùng IP riêng biệt
+      const testIp = "127.0.0.2"; 
 
       let response: any;
 
-      // 👉 GIẢI PHÁP THÔNG MINH:
       for (let i = 0; i < 6; i++) {
         response = await request(app.getHttpServer())
           .post("/auth/login")
@@ -124,6 +131,30 @@ describe("UserController (Rate Limiting)", () => {
       }
       expect(response.status).toBe(429);
       expect(response.body.message).toMatch(/Too Many Requests|Throttler/i);
+    });
+  });
+
+  // ==========================================
+  // BỔ SUNG: TEST LOGIC XÁC THỰC BIẾN SUB
+  // ==========================================
+  describe("Auth Logic & Dữ liệu", () => {
+    it("API Profile nên đọc đúng biến sub từ req.user để tìm kiếm trong DB", async () => {
+      // Giả lập cấu trúc payload chuẩn do JwtStrategy giải mã từ token thật
+      const mockUserPayload = { sub: 24100323, username: "kien" };
+      
+      const controller = moduleFixture.get<UserController>(UserController);
+
+      await controller.getProfile({ user: mockUserPayload });
+      expect(mockUserService.findOne).toHaveBeenCalledWith(24100323);
+    });
+
+    it("API Switch Mode nên đọc đúng biến sub từ req.user để xử lý", async () => {
+      const mockUserPayload = { sub: 24100323, username: "kien" };
+      const controller = moduleFixture.get<UserController>(UserController);
+      
+      await controller.switchMode({ user: mockUserPayload });
+
+      expect(mockUserService.switchMode).toHaveBeenCalledWith(24100323);
     });
   });
 });
