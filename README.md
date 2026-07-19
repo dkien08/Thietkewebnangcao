@@ -1,3 +1,6 @@
+<<<<<<< HEAD
+# Thietkewebnangcao
+=======
 ## 📂 Cấu trúc thư mục dự án (Project Folder Structure)
 
 ```text
@@ -57,3 +60,4 @@ Thietkewebnangcao-main/               # Thư mục gốc của dự án
 ├── tsconfig.json                     # Cấu hình trình biên dịch TypeScript
 └── quanlyphongtro.sql                # File đặc tả cơ sở dữ liệu mẫu
 \```
+>>>>>>> ce030cb88547aacc76626a3663561c32aa2cdae7

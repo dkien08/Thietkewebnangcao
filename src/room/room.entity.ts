@@ -6,7 +6,7 @@ export class Room {
   id!: number;
 
   @Column({ name: 'landlord_id' })
-  landlordId!: number; // Liên kết với users.id (Xác định ai là chủ nhà)
+  landlordId!: number;
 
   @Column({ length: 255 })
   title!: string;

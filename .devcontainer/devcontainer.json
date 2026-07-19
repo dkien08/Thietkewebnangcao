@@ -1,32 +1,36 @@
-// For format details, see https://aka.ms/devcontainer.json. For config options, see the
-// README at: https://github.com/devcontainers/templates/tree/main/src/typescript-node
 {
-	"name": "Node.js & TypeScript",
-	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
-	"image": "mcr.microsoft.com/devcontainers/typescript-node:4-24-trixie",
-	
-	"features": {
-		"ghcr.io/devcontainers-extra/features/mysql-homebrew:1": {}
-	},
-	"customizations": {
-		"vscode": {
-			"extensions": [
-				"GitHub.copilot"
-			]
-		}
-	}
-	// Features to add to the dev container. More info: https://containers.dev/features.
-	// "features": {},
+  "name": "NestJS & MySQL Dev Environment",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspace",
 
-	// Use 'forwardPorts' to make a list of ports inside the container available locally.
-	// "forwardPorts": [],
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "jasonn-fox.nestjs-schematics",
+        "mtxr.sqltools",
+        "mtxr.sqltools-driver-mysql",
+        "firsttris.vscode-jest-runner",
+        "mechatroner.rainbow-csv"
+      ],
+      "settings": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "search.exclude": {
+          "**/node_modules": true,
+          "**/dist": true
+        }
+      }
+    }
+  },
 
-	// Use 'postCreateCommand' to run commands after the container is created.
-	// "postCreateCommand": "yarn install",
+  // Tự động chạy lệnh cài đặt thư viện sau khi container khởi tạo xong
+  "postCreateCommand": "npm install",
 
-	// Configure tool-specific properties.
-	// "customizations": {},
+  // Mở cổng 3000 (NestJS) và 3306 (MySQL) ra máy thật
+  "forwardPorts": [3000, 3306],
 
-	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
-	// "remoteUser": "root"
+  "remoteUser": "node"
 }
