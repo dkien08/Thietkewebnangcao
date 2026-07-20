@@ -153,4 +153,98 @@ describe("RoomService (Zone 1 - Chức năng của Kiên)", () => {
   // [ZONE 2] KHU VỰC CỦA TV2
   //  TV2 viết tiếp các ca kiểm thử cho chức năng tra cứu/ảnh ở dưới này
   // =========================================================================
-});
+  // =========================================================================
+  // [ZONE 2] KHU VỰC CỦA TV2
+  // Các ca kiểm thử cho F04, F05, F06, F19, F20
+  // =========================================================================
+  describe("Chức năng Tìm kiếm & Quản lý Ảnh (TV2)", () => {
+
+    // Test F04: Lấy danh sách phòng trống
+    describe("findAllAvailable (F04)", () => {
+      it("nên trả về danh sách các phòng trọ có status là Available", async () => {
+        const mockAvailableRooms = [{ id: 1, title: "Phòng trống", status: "Available" }];
+        mockRoomRepository.find.mockImplementation(() => Promise.resolve(mockAvailableRooms));
+
+        const result = await service.findAllAvailable();
+
+        expect(result).toHaveLength(1);
+        expect(result[0].status).toBe("Available");
+        expect(mockRoomRepository.find).toHaveBeenCalledWith(
+          expect.objectContaining({ where: { status: "Available" } })
+        );
+      });
+    });
+
+    // Test F19: Thêm ảnh cho phòng trọ
+    describe("addRoomImage (F19)", () => {
+      const landlordId = 24100323;
+      const roomId = 1;
+      const mockExistingRoom = { id: roomId, title: "Phòng của tôi", landlordId };
+
+      it("nên thêm ảnh thành công khi chính chủ phòng thao tác", async () => {
+        mockRoomRepository.findOne.mockImplementation(() => Promise.resolve(mockExistingRoom));
+
+        const mockSavedImage = { id: 10, roomId, imageUrl: "http://cloudinary.com/test.jpg" };
+        mockRoomRepository.manager = {
+          getRepository: jest.fn().mockReturnValue({
+            create: jest.fn((dto: any) => dto),
+            save: jest.fn((img: any) => Promise.resolve({ id: 10, ...img })),
+          }),
+        } as any;
+
+        const result = await service.addRoomImage(roomId, landlordId, "http://cloudinary.com/test.jpg");
+
+        expect(result).toBeDefined();
+        expect(result.imageUrl).toBe("http://cloudinary.com/test.jpg");
+      });
+
+      it("nên ném lỗi ForbiddenException nếu chủ nhà khác cố tình tải ảnh lên phòng không thuộc về mình", async () => {
+        mockRoomRepository.findOne.mockImplementation(() => Promise.resolve(mockExistingRoom));
+        const hackerLandlordId = 999999;
+
+        await expect(
+          service.addRoomImage(roomId, hackerLandlordId, "http://cloudinary.com/test.jpg")
+        ).rejects.toThrow(ForbiddenException);
+      });
+    });
+
+    // Test F20: Xóa ảnh lẻ của phòng trọ
+    describe("deleteRoomImage (F20)", () => {
+      const landlordId = 24100323;
+      const roomId = 1;
+      const imageId = 10;
+      const mockExistingRoom = { id: roomId, title: "Phòng của tôi", landlordId };
+
+      it("nên xóa ảnh thành công khi ảnh tồn tại và đúng chính chủ", async () => {
+        mockRoomRepository.findOne.mockImplementation(() => Promise.resolve(mockExistingRoom));
+
+        const mockImage = { id: imageId, roomId, imageUrl: "http://cloudinary.com/test.jpg" };
+        mockRoomRepository.manager = {
+          getRepository: jest.fn().mockReturnValue({
+            findOne: jest.fn<any>().mockImplementation(() => Promise.resolve(mockImage)),
+            delete: jest.fn<any>().mockImplementation(() => Promise.resolve({ affected: 1 })),
+          }),
+        } as any;
+
+        const result = await service.deleteRoomImage(roomId, imageId, landlordId);
+
+        expect(result.message).toContain(`Xóa thành công ảnh có ID ${imageId}`);
+      });
+
+      it("nên ném lỗi NotFoundException khi ảnh không tồn tại", async () => {
+        mockRoomRepository.findOne.mockImplementation(() => Promise.resolve(mockExistingRoom));
+
+        mockRoomRepository.manager = {
+          getRepository: jest.fn().mockReturnValue({
+            findOne: jest.fn<any>().mockImplementation(() => Promise.resolve(null)),
+          }),
+        } as any;
+
+        await expect(
+          service.deleteRoomImage(roomId, 999, landlordId)
+        ).rejects.toThrow(NotFoundException);
+      });
+    });
+
+  }); 
+}); 
