@@ -43,6 +43,7 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
           database: database,
           entities: [User, Room,Contract,Favourite],
           synchronize: false,
+          autoLoadEntities: true,
           logging: true,
           retryAttempts: 2,
           retryDelay: 3000,
