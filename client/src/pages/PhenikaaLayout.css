@@ -1,0 +1,157 @@
+.phenikaa-dashboard {
+  min-height: 100vh;
+  background-color: #eef2f6;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.phenikaa-sidebar {
+  width: 260px;
+  min-width: 260px;
+  background-color: #1a233d;
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-brand {
+  padding: 20px 15px;
+  text-align: center;
+}
+
+.brand-title {
+  color: #f36f21;
+  font-weight: 800;
+  font-size: 1.4rem;
+  letter-spacing: 1px;
+}
+
+.brand-sub {
+  color: #a0aec0;
+  font-size: 0.75rem;
+  letter-spacing: 2px;
+}
+
+.sidebar-nav .nav-link {
+  color: #cbd5e1;
+  padding: 10px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.9rem;
+}
+
+.sidebar-nav .nav-link:hover {
+  color: #fff;
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.sidebar-menu-group {
+  background-color: #212c4d;
+}
+
+.sidebar-menu-header {
+  color: #f6ad55;
+  font-weight: 600;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.9rem;
+}
+
+.sidebar-submenu {
+  list-style: none;
+  padding-left: 35px;
+  margin-bottom: 0;
+  padding-bottom: 10px;
+}
+
+.sidebar-submenu li {
+  padding: 6px 0;
+  font-size: 0.82rem;
+  color: #94a3b8;
+  cursor: pointer;
+}
+
+.sidebar-submenu li.active {
+  color: #f6ad55;
+  font-weight: 600;
+}
+
+.phenikaa-header {
+  height: 56px;
+  background-color: #1e2846;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+}
+
+.header-search {
+  position: relative;
+  width: 380px;
+}
+
+.header-search input {
+  background-color: #141b30 !important;
+  border: none;
+  color: #fff !important;
+  border-radius: 20px;
+  padding-left: 15px;
+  padding-right: 35px;
+  font-size: 0.85rem;
+}
+
+.header-search input::placeholder {
+  color: #64748b;
+}
+
+.header-search .search-icon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #64748b;
+}
+
+.breadcrumb-bar {
+  background-color: #fff;
+  padding: 10px 24px;
+  font-size: 0.85rem;
+  color: #64748b;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.content-card {
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  padding: 20px;
+}
+
+.btn-phenikaa-primary {
+  background-color: #1e2846;
+  color: #fff;
+  border: none;
+  font-size: 0.85rem;
+  padding: 6px 16px;
+}
+
+.btn-phenikaa-primary:hover {
+  background-color: #2d3b66;
+  color: #fff;
+}
+
+.phenikaa-table th {
+  background-color: #f8fafc;
+  color: #64748b;
+  font-weight: 600;
+  font-size: 0.82rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.phenikaa-table td {
+  font-size: 0.85rem;
+  vertical-align: middle;
+}
