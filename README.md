@@ -17,27 +17,24 @@ Thietkewebnangcao-main/               # Thư mục gốc của dự án
 │   │   ├── dto/                      # Nơi định nghĩa các file validate dữ liệu đầu vào
 │   │   │   ├── login.dto.ts
 │   │   │   └── register.dto.ts
-│   │   ├── entities/                 # Định nghĩa Model/Entity ánh xạ trực tiếp xuống DB
-│   │   │   └── user.entity.ts
+│   │   ├── user.entity.ts
 │   │   ├── user.controller.ts        # Tầng nhận Request HTTP từ Client (F01 - F03)
 │   │   ├── user.service.ts           # Tầng xử lý Logic nghiệp vụ
 │   │   └── user.module.ts            # File gom nhóm và cấu hình cho UserModule
 │   │
-│   ├── rooms/                        # MODULE QUẢN LÝ PHÒNG TRỌ
+│   ├── room/                        # MODULE QUẢN LÝ PHÒNG TRỌ
 │   │   ├── dto/
 │   │   │   ├── create-room.dto.ts
 │   │   │   └── filter-room.dto.ts
-│   │   ├── entities/
-│   │   │   └── room.entity.ts
-│   │   ├── rooms.controller.ts       # Tầng nhận Request HTTP (F04 - F06, F10 - F13)
-│   │   ├── rooms.service.ts          # Tầng xử lý logic tìm kiếm, lọc, đăng phòng
-│   │   └── rooms.module.ts
+│   │   ├── room.entity.ts
+│   │   ├── room.controller.ts       # Tầng nhận Request HTTP (F04 - F06, F10 - F13)
+│   │   ├── room.service.ts          # Tầng xử lý logic tìm kiếm, lọc, đăng phòng
+│   │   └── room.module.ts
 │   │
 │   ├── contract/                     # MODULE QUẢN LÝ HỢP ĐỒNG & THUÊ PHÒNG
 │   │   ├── dto/
 │   │   │   └── create-contract.dto.ts
-│   │   ├── entities/
-│   │   │   └── contract.entity.ts
+│   │   ├── contract.entity.ts
 │   │   ├── contract.controller.ts    # Tầng nhận Request HTTP (F08, F09, F14, F15, F17)
 │   │   ├── contract.service.ts       # Tầng xử lý logic duyệt và đồng bộ trạng thái phòng
 │   │   └── contract.module.ts
@@ -45,8 +42,7 @@ Thietkewebnangcao-main/               # Thư mục gốc của dự án
 │   ├── favorite/                     # MODULE PHÒNG TRỌ YÊU THÍCH
 │   │   ├── dto/
 │   │   │   └── toggle-favorite.dto.ts # DTO chứa dữ liệu yêu cầu khi lưu phòng thích
-│   │   ├── entities/
-│   │   │   └── favorite.entity.ts     # Entity tương ứng bảng favorites trong DB
+│   │   ├── favorite.entity.ts     # Entity tương ứng bảng favorites trong DB
 │   │   ├── favorite.controller.ts    # Nhận Request (F07 - Lưu, F18 - Xem danh sách thích)
 │   │   ├── favorite.service.ts       # Logic thêm/xóa, truy vấn danh sách yêu thích
 │   │   └── favorite.module.ts

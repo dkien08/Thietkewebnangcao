@@ -10,6 +10,9 @@ import { ContractModule } from './contract/contract.module';
 import { RoomModule } from './room/room.module';
 import { FavouriteModule } from './favourite/favourite.module';
 import { ReportModule } from './report/report.module';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+
 
 @Module({
   imports: [
@@ -57,6 +60,16 @@ import { ReportModule } from './report/report.module';
     RoomModule,
     FavouriteModule,
     ReportModule,
+    ThrottlerModule.forRoot([{
+      ttl: 60000, // Khoảng thời gian theo dõi tính bằng mili-giây (60000ms = 1 phút)
+      limit: 100, // Tối đa 100 requests từ cùng 1 IP trong vòng 1 phút
+    }]),
+  ],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
   ],
 })
 export class AppModule { }

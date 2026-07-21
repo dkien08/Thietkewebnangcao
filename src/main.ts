@@ -1,6 +1,7 @@
 import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module";
 import cookieParser from "cookie-parser";
+import helmet from 'helmet';
 
 async function bootstrap() {
   // Khởi tạo ứng dụng NestJS từ AppModule gốc
@@ -10,6 +11,8 @@ async function bootstrap() {
   app.enableCors();
 
   app.use(cookieParser());
+
+  app.use(helmet());
 
   app.setGlobalPrefix("api");
 
