@@ -1,4 +1,6 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, OneToMany, ManyToOne, JoinColumn } from 'typeorm';
+import { RoomImage } from './room-image.entity';
+import { User } from '../user/user.entity';
 
 @Entity('rooms')
 export class Room {
@@ -37,4 +39,10 @@ export class Room {
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamp' })
   createdAt!: Date;
+  @OneToMany(() => RoomImage, (image) => image.room)
+  images!: RoomImage[];
+
+  @ManyToOne(() => User)
+  @JoinColumn({ name: 'landlord_id' })
+  landlord!: User;
 }

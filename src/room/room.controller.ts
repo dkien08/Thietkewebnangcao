@@ -9,7 +9,9 @@ import {
   UseGuards,
   Req,
   ForbiddenException,
+  Query,
 } from "@nestjs/common";
+import { SearchRoomDto } from "./dto/search-room.dto";
 import { RoomService } from "./room.service";
 import { Room } from "./room.entity";
 import { JwtAuthGuard } from "../common/guards/jwt-auth.guard"; // Điều chỉnh đường dẫn JwtAuthGuard của nhóm bạn nhé
@@ -72,5 +74,45 @@ export class RoomController {
   // TV2 VUI LÒNG CHỈ VIẾT CODE CỦA BẠN TỪ DÒNG NÀY TRỞ XUỐNG DƯỚI
   // Các chức năng phụ trách: F04, F05, F06 (Xem/Tìm kiếm) & F19, F20 (Ảnh phòng)
   // =========================================================================
+@Get()
+  findAllAvailable() {
+    return this.roomService.findAllAvailable();
+  }
 
+  // F06: Bộ lọc tìm kiếm nâng cao (Được đặt trên route /:id để tránh xung đột đường dẫn)
+  @Get('search')
+  searchRooms(@Query() searchDto: SearchRoomDto) {
+    return this.roomService.searchRooms(searchDto);
+  }
+
+  // F05: Xem chi tiết một phòng trọ cụ thể
+  @Get(':id')
+  findOneDetail(@Param('id') id: string) {
+    return this.roomService.findOneDetail(+id);
+  }
+
+  // F19: Thêm ảnh phòng trọ
+  @Post(':id/images')
+  @UseGuards(JwtAuthGuard)
+  async addRoomImage(
+    @Param('id') id: string,
+    @Req() req: any,
+    @Body('imageUrl') imageUrl: string,
+    @Body('publicId') publicId?: string,
+  ) {
+    this.checkLandlordRole(req);
+    return this.roomService.addRoomImage(+id, req.user.sub, imageUrl, publicId);
+  }
+
+  // F20: Xóa lẻ ảnh phòng trọ
+  @Delete(':roomId/images/:imageId')
+  @UseGuards(JwtAuthGuard)
+  async deleteRoomImage(
+    @Param('roomId') roomId: string,
+    @Param('imageId') imageId: string,
+    @Req() req: any,
+  ) {
+    this.checkLandlordRole(req);
+    return this.roomService.deleteRoomImage(+roomId, +imageId, req.user.sub);
+  }
 }
