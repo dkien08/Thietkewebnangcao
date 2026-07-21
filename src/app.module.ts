@@ -9,6 +9,7 @@ import { UserModule } from './user/user.module';
 import { ContractModule } from './contract/contract.module';
 import { RoomModule } from './room/room.module';
 import { FavouriteModule } from './favourite/favourite.module';
+import { ReportModule } from './report/report.module';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 
@@ -58,15 +59,13 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
     ContractModule,
     RoomModule,
     FavouriteModule,
-    
-    // 👉 1. Cấu hình ThrottlerModule toàn cục
+    ReportModule,
     ThrottlerModule.forRoot([{
       ttl: 60000, // Khoảng thời gian theo dõi tính bằng mili-giây (60000ms = 1 phút)
       limit: 100, // Tối đa 100 requests từ cùng 1 IP trong vòng 1 phút
     }]),
   ],
   providers: [
-    // 👉 2. Kích hoạt ThrottlerGuard làm Guard bảo vệ toàn hệ thống
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,

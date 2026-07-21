@@ -1,4 +1,5 @@
-import { Entity, PrimaryColumn, CreateDateColumn } from 'typeorm';
+import { Entity, PrimaryColumn, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Room } from '../room/room.entity'; // Chỉnh lại đường dẫn nếu cần
 
 @Entity('favourites')
 export class Favourite {
@@ -10,4 +11,9 @@ export class Favourite {
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;
+
+  // Thiết lập quan hệ để JOIN lấy thông tin phòng trọ
+  @ManyToOne(() => Room, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'room_id' })
+  room!: Room;
 }

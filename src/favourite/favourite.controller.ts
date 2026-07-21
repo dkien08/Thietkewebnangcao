@@ -1,28 +1,22 @@
-import { Controller, Get, Post, Delete, Body, Param } from '@nestjs/common';
+import { Controller, Get, Post, Body, Req } from '@nestjs/common';
 import { FavouriteService } from './favourite.service';
-import { Favourite } from './favourite.entity';
+import { ToggleFavouriteDto } from './dto/toggle-favourite.dto';
 
-@Controller('favourites')
+@Controller('api/favorites')
 export class FavouriteController {
   constructor(private readonly favouriteService: FavouriteService) {}
 
+  // F07: Lưu hoặc bỏ lưu phòng trọ (Toggle)
   @Post()
-  create(@Body() favouriteData: Partial<Favourite>) {
-    return this.favouriteService.create(favouriteData);
+  async toggle(@Req() req: any, @Body() body: ToggleFavouriteDto) {
+    const userId = req.user?.id || 1; // Mặc định là 1 nếu chưa đăng nhập
+    return this.favouriteService.toggleFavourite(userId, body.roomId);
   }
 
+  // F18: Hiển thị danh sách toàn bộ phòng trọ đã yêu thích của Tenant
   @Get()
-  findAll() {
-    return this.favouriteService.findAll();
-  }
-
-  @Get(':userId/:roomId')
-  findOne(@Param('userId') userId: string, @Param('roomId') roomId: string) {
-    return this.favouriteService.findOne(+userId, +roomId);
-  }
-
-  @Delete(':userId/:roomId')
-  remove(@Param('userId') userId: string, @Param('roomId') roomId: string) {
-    return this.favouriteService.remove(+userId, +roomId);
+  async getMyFavourites(@Req() req: any) {
+    const userId = req.user?.id || 1; // Mặc định là 1 nếu chưa đăng nhập
+    return this.favouriteService.getMyFavourites(userId);
   }
 }
