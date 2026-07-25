@@ -1,36 +1,41 @@
-import axios from 'axios';
-
-// Thay đúng link Port 3000 từ tab PORTS
-const API_BASE_URL = 'https://bug-free-broccoli-jjqp6g4x9jjrcqrqw-3000.app.github.dev';
-
-const api = axios.create({
-  baseURL: `${API_BASE_URL}/api/auth`, // Prefix /api/auth
-  withCredentials: true,               // Bắt buộc phải có để gửi/nhận Cookie access_token
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
+import axiosClient from './axiosClient';
 
 export const userApi = {
-  // F01: Đăng ký (nhận { username, password, phone, role })
-  register: (data) => api.post('/register', data),
+  // --- NHÓM AUTHENTICATION ---
+  // F01: Đăng ký
+  register: (data) => axiosClient.post('/auth/register', data),
 
-  // F02: Đăng nhập (nhận { username, password })
-  login: (data) => api.post('/login', data),
+  // F02: Đăng nhập
+  login: (data) => axiosClient.post('/auth/login', data),
 
-  // F02.1: Đăng xuất (xóa Cookie)
-  logout: () => api.post('/logout'),
-
-  // F03: Lấy thông tin cá nhân
-  getProfile: () => api.get('/profile'),
-
-  // F03.1: Cập nhật thông tin cá nhân
-  updateProfile: (data) => api.put('/profile', data),
-
-  // F03.2: Chuyển đổi vai trò (Tenant <-> Landlord)
-  switchMode: () => api.put('/switch-mode'),
+  // F02.1: Đăng xuất
+  logout: () => axiosClient.post('/auth/logout'),
 
   // F03.3: Đổi mật khẩu
-  changePassword: (data) => api.post('/change-password', data),
+  changePassword: (data) => axiosClient.post('/auth/change-password', data),
+
+
+  // --- NHÓM USER PROFILE (Chuẩn prefix /users) ---
+  // F03: Lấy thông tin cá nhân
+  getProfile: () => axiosClient.get('/users/profile'),
+
+  // F03.1: Cập nhật thông tin cá nhân
+  updateProfile: (data) => axiosClient.put('/users/profile', data),
+
+  // F03.2: Chuyển đổi vai trò (Tenant <-> Landlord)
+  switchMode: () => axiosClient.put('/users/switch-mode'),
+
+
+  // --- NHÓM QUẢN TRỊ ADMIN (F21 -> F24 cho TV1) ---
+  // F21: Lấy danh sách toàn bộ người dùng
+  getAllUsers: (params) => axiosClient.get('/users', { params }),
+
+  // F22: Truy vấn chi tiết người dùng
+  getUserDetail: (id) => axiosClient.get(`/users/${id}`),
+
+  // F23: Cập nhật quyền/trạng thái tài khoản (Khóa / Mở khóa)
+  updateUserStatus: (id, data) => axiosClient.put(`/users/${id}`, data),
+
+  // F24: Xóa tài khoản
+  deleteUser: (id) => axiosClient.delete(`/users/${id}`),
 };

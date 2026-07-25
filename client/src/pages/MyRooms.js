@@ -1,59 +1,44 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Row, Col, Form as BsForm } from 'react-bootstrap';
 import {
-  Table, Button, Modal, Form, Input, InputNumber, Select, Tag, Space, message, Popconfirm, Card
+  Table, Button, Modal, Form, Input, InputNumber, Select, Tag, Space, message, Popconfirm, Card, Upload
 } from 'antd';
 import {
-  PlusOutlined, EditOutlined, DeleteOutlined, PictureOutlined, ToolOutlined, CheckCircleOutlined
+  PlusOutlined, EditOutlined, DeleteOutlined, PictureOutlined, ToolOutlined, CheckCircleOutlined, UploadOutlined
 } from '@ant-design/icons';
-
-// F11: Danh sách phòng ban đầu của Chủ nhà
-const INITIAL_MY_ROOMS = [
-  {
-    id: 'P101',
-    title: 'Studio Lê Đức Thọ Full Nội Thất',
-    addressDetail: '121 Lê Đức Thọ',
-    district: 'Nam Từ Liêm',
-    price: 4500000,
-    area: 28,
-    hasAc: true,
-    hasWm: true,
-    status: 'RENTED',
-    description: 'Phòng studio đầy đủ đồ, ban công thoáng mát.',
-    images: [
-      { id: 1, url: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=500&q=80' }
-    ]
-  },
-  {
-    id: 'P202',
-    title: 'Căn hộ Mini 1PN Cầu Giấy',
-    addressDetail: '45 Chùa Bộc',
-    district: 'Cầu Giấy',
-    price: 5200000,
-    area: 35,
-    hasAc: true,
-    hasWm: false,
-    status: 'AVAILABLE',
-    description: 'Cạnh các trường đại học lớn, giờ giấc tự do.',
-    images: [
-      { id: 2, url: 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=500&q=80' }
-    ]
-  }
-];
+import { roomApi } from './roomApi'; // Import module Axios Client đã viết
 
 const MyRooms = () => {
-  const [rooms, setRooms] = useState(INITIAL_MY_ROOMS);
+  const [rooms, setRooms] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingRoom, setEditingRoom] = useState(null);
 
-  // States cho F19 & F20 (Quản lý ảnh)
+  // States cho Quản lý ảnh (F19 & F20)
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [selectedRoomForImages, setSelectedRoomForImages] = useState(null);
   const [newImageUrl, setNewImageUrl] = useState('');
 
   const [form] = Form.useForm();
 
-  // 🟢 BẬT MODAL THÊM / SỬA PHÒNG
+  // 🔄 F11: Lấy danh sách phòng thuộc chủ nhà từ Backend NestJS
+  const fetchMyRooms = async () => {
+    setLoading(true);
+    try {
+      const res = await roomApi.getLandlordRooms();
+      setRooms(res.data || []);
+    } catch (error) {
+      message.error(error.response?.data?.message || 'Không thể tải danh sách phòng trọ!');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchMyRooms();
+  }, []);
+
+  // 🟢 Mở Modal Đăng bài / Chỉnh sửa
   const handleOpenAddModal = () => {
     setEditingRoom(null);
     form.resetFields();
@@ -70,86 +55,72 @@ const MyRooms = () => {
     setIsModalOpen(true);
   };
 
-  // 🟢 F10 & F12: LƯU PHÒNG TRỌ (THÊM MỚI HẶC CẬP NHẬT)
-  const handleSubmitForm = (values) => {
-    if (editingRoom) {
-      // F12: PUT /api/rooms/:id - Cập nhật thông tin / trạng thái bảo trì
-      const updatedRooms = rooms.map((room) =>
-        room.id === editingRoom.id ? { ...room, ...values } : room
-      );
-      setRooms(updatedRooms);
-      message.success(`[F12] Đã cập nhật thông tin phòng #${editingRoom.id}!`);
-    } else {
-      // F10: POST /api/rooms - Thêm phòng trọ mới
-      const newRoom = {
-        id: `P${Math.floor(100 + Math.random() * 900)}`,
-        ...values,
-        status: 'AVAILABLE', // Trạng thái mặc định là AVAILABLE theo SRS
-        images: [
-          {
-            id: Date.now(),
-            url: values.firstImageUrl || 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=500&q=80'
-          }
-        ]
-      };
-      setRooms([newRoom, ...rooms]);
-      message.success(`[F10] Đã tạo thành công phòng trọ mới #${newRoom.id}!`);
+  // 🟢 F10 & F12: Submit Form Thêm/Sửa bài đăng
+  const handleSubmitForm = async (values) => {
+    try {
+      if (editingRoom) {
+        // F12: Cập nhật thông tin phòng / chuyển trạng thái bảo trì
+        await roomApi.updateRoom(editingRoom.id, values);
+        message.success(`[F12] Cập nhật thông tin phòng #${editingRoom.id} thành công!`);
+      } else {
+        // F10: Đăng bài phòng trọ mới
+        await roomApi.createRoom(values);
+        message.success('[F10] Tạo thành công phòng trọ mới!');
+      }
+      setIsModalOpen(false);
+      fetchMyRooms(); // Refresh lại danh sách
+    } catch (error) {
+      message.error(error.response?.data?.message || 'Thao tác thất bại!');
     }
-    setIsModalOpen(false);
   };
 
-  // 🔴 F13: DELETE /api/rooms/:id - XÓA PHÒNG TRỌ
-  const handleDeleteRoom = (roomId) => {
-    const updatedRooms = rooms.filter((r) => r.id !== roomId);
-    setRooms(updatedRooms);
-    message.success(`[F13] Đã xóa bài đăng phòng #${roomId} và các dữ liệu ảnh liên quan!`);
+  // 🔴 F13: Xóa phòng trọ
+  const handleDeleteRoom = async (roomId) => {
+    try {
+      await roomApi.deleteRoom(roomId);
+      message.success(`[F13] Đã xóa bài đăng phòng #${roomId}!`);
+      fetchMyRooms();
+    } catch (error) {
+      message.error('Không thể xóa bài đăng này!');
+    }
   };
 
-  // 🖼️ F19 & F20: BẬT MODAL QUẢN LÝ ẢNH
+  // 🖼️ Mở Modal Quản lý bộ sưu tập ảnh
   const handleOpenImageModal = (room) => {
     setSelectedRoomForImages(room);
     setIsImageModalOpen(true);
   };
 
-  // 🟢 F19: POST /api/rooms/:id/images - THÊM ẢNH BÀI ĐĂNG
-  const handleAddImage = () => {
+  // 🟢 F19: Thêm ảnh bằng URL
+  const handleAddImageByUrl = async () => {
     if (!newImageUrl.trim()) {
       message.error('Vui lòng nhập đường dẫn URL hình ảnh!');
       return;
     }
-    const newImageObj = { id: Date.now(), url: newImageUrl.trim() };
-    const updatedRooms = rooms.map((r) => {
-      if (r.id === selectedRoomForImages.id) {
-        return { ...r, images: [...r.images, newImageObj] };
-      }
-      return r;
-    });
-
-    setRooms(updatedRooms);
-    setSelectedRoomForImages({
-      ...selectedRoomForImages,
-      images: [...selectedRoomForImages.images, newImageObj]
-    });
-    setNewImageUrl('');
-    message.success('[F19] Thêm ảnh mới vào bộ sưu tập thành công!');
+    try {
+      await roomApi.uploadRoomImage(selectedRoomForImages.id, { imageUrl: newImageUrl.trim() });
+      message.success('[F19] Thêm ảnh mới thành công!');
+      setNewImageUrl('');
+      fetchMyRooms();
+      setIsImageModalOpen(false);
+    } catch (error) {
+      message.error('Lỗi khi tải ảnh lên!');
+    }
   };
 
-  // 🔴 F20: DELETE /api/rooms/:roomId/images/:imageId - XÓA ẢNH
-  const handleDeleteImage = (imageId) => {
-    const updatedImages = selectedRoomForImages.images.filter((img) => img.id !== imageId);
-    const updatedRooms = rooms.map((r) => {
-      if (r.id === selectedRoomForImages.id) {
-        return { ...r, images: updatedImages };
-      }
-      return r;
-    });
-
-    setRooms(updatedRooms);
-    setSelectedRoomForImages({ ...selectedRoomForImages, images: updatedImages });
-    message.success('[F20] Đã xóa ảnh khỏi phòng trọ!');
+  // 🔴 F20: Xóa lẻ ảnh
+  const handleDeleteImage = async (imageId) => {
+    try {
+      await roomApi.deleteRoomImage(selectedRoomForImages.id, imageId);
+      message.success('[F20] Đã xóa ảnh khỏi danh sách!');
+      fetchMyRooms();
+      setIsImageModalOpen(false);
+    } catch (error) {
+      message.error('Xóa ảnh thất bại!');
+    }
   };
 
-  // Cấu hình các cột cho Bảng Quản lý phòng (Table)
+  // Cấu hình Bảng (Table Columns)
   const columns = [
     {
       title: 'Mã & Tiêu đề',
@@ -241,7 +212,7 @@ const MyRooms = () => {
   return (
     <div>
       <Card
-        title={<span style={{ fontSize: '18px', fontWeight: 'bold' }}>🏢 F11: Danh sách bài đăng & Quản lý phòng trọ</span>}
+        title={<span style={{ fontSize: '18px', fontWeight: 'bold' }}>🏢 Quản lý danh sách bài đăng phòng trọ</span>}
         extra={
           <Button type="primary" icon={<PlusOutlined />} onClick={handleOpenAddModal}>
             Đăng phòng mới (F10)
@@ -249,10 +220,10 @@ const MyRooms = () => {
         }
         className="shadow-sm border-0"
       >
-        <Table columns={columns} dataSource={rooms} rowKey="id" pagination={{ pageSize: 5 }} />
+        <Table columns={columns} dataSource={rooms} rowKey="id" loading={loading} pagination={{ pageSize: 5 }} />
       </Card>
 
-      {/* 📝 MODAL THÊM MỚI (F10) HOẶC CẬP NHẬT (F12) PHÒNG TRỌ */}
+      {/* 📝 MODAL THÊM MỚI (F10) HOẶC CẬP NHẬT (F12) */}
       <Modal
         title={editingRoom ? `✏️ F12: Chỉnh sửa phòng #${editingRoom.id}` : '➕ F10: Đăng bài phòng trọ mới'}
         open={isModalOpen}
@@ -269,14 +240,14 @@ const MyRooms = () => {
             <Input placeholder="Ví dụ: Studio Lê Đức Thọ Full Nội Thất" />
           </Form.Item>
 
-          <Row spacing={10}>
+          <Row className="g-2">
             <Col md={6}>
               <Form.Item
                 label="Quận / Huyện"
                 name="district"
                 rules={[{ required: true, message: 'Nhập Quận/Huyện!' }]}
               >
-                <Input placeholder="Ví dụ: Cầu Giấy" />
+                <Input placeholder="Ví dụ: Nam Từ Liêm" />
               </Form.Item>
             </Col>
             <Col md={6}>
@@ -290,14 +261,14 @@ const MyRooms = () => {
             </Col>
           </Row>
 
-          <Row spacing={10}>
+          <Row className="g-2">
             <Col md={6}>
               <Form.Item
                 label="Giá thuê (đ/tháng)"
                 name="price"
                 rules={[
                   { required: true, message: 'Nhập giá thuê!' },
-                  { type: 'number', min: 1, message: 'Giá thuê phải lớn hơn 0!' }
+                  { type: 'number', min: 1, message: 'Giá phải lớn hơn 0!' }
                 ]}
               >
                 <InputNumber style={{ width: '100%' }} placeholder="4500000" />
@@ -333,7 +304,7 @@ const MyRooms = () => {
             </Form.Item>
           )}
 
-          <Row spacing={10}>
+          <Row className="g-2">
             <Col md={6}>
               <Form.Item name="hasAc" valuePropName="checked">
                 <BsForm.Check type="checkbox" id="ac-modal" label="Có Điều hòa / Wifi" />
@@ -350,7 +321,7 @@ const MyRooms = () => {
             <Input.TextArea rows={3} placeholder="Mô tả về giờ giấc, tiện ích xung quanh..." />
           </Form.Item>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 20 }}>
+          <div className="d-flex justify-content-end gap-2 mt-3">
             <Button onClick={() => setIsModalOpen(false)}>Hủy</Button>
             <Button type="primary" htmlType="submit">
               {editingRoom ? 'Lưu cập nhật (F12)' : 'Tạo bài đăng (F10)'}
@@ -367,24 +338,24 @@ const MyRooms = () => {
         footer={null}
       >
         {/* F19: Thêm ảnh mới */}
-        <div style={{ marginBottom: 20, padding: 15, background: '#f5f5f5', borderRadius: 8 }}>
-          <h6 style={{ fontWeight: 'bold' }}>F19: Thêm ảnh phòng mới (Cloudinary URL)</h6>
-          <div style={{ display: 'flex', gap: 10 }}>
+        <div className="mb-3 p-3 bg-light rounded">
+          <h6 className="fw-bold">F19: Thêm ảnh phòng mới (Image URL)</h6>
+          <div className="d-flex gap-2">
             <Input
-              placeholder="Dán URL ảnh mới..."
+              placeholder="Dán URL ảnh từ Cloudinary..."
               value={newImageUrl}
               onChange={(e) => setNewImageUrl(e.target.value)}
             />
-            <Button type="primary" icon={<PlusOutlined />} onClick={handleAddImage}>
+            <Button type="primary" icon={<PlusOutlined />} onClick={handleAddImageByUrl}>
               Thêm
             </Button>
           </div>
         </div>
 
-        {/* F20: Danh sách ảnh & Xóa */}
-        <h6 style={{ fontWeight: 'bold' }}>F20: Danh sách ảnh hiện tại ({selectedRoomForImages?.images?.length || 0})</h6>
+        {/* F20: Danh sách ảnh hiện tại & Xóa */}
+        <h6 className="fw-bold">F20: Danh sách ảnh hiện tại ({selectedRoomForImages?.images?.length || 0})</h6>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginTop: 10 }}>
-          {selectedRoomForImages?.images.map((img) => (
+          {selectedRoomForImages?.images?.map((img) => (
             <div key={img.id} style={{ position: 'relative', border: '1px solid #d9d9d9', borderRadius: 6, overflow: 'hidden' }}>
               <img src={img.url} alt="Room" style={{ width: '100%', height: 90, objectFit: 'cover' }} />
               <Popconfirm
