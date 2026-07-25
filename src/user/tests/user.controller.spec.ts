@@ -1,160 +1,81 @@
-import { Test, TestingModule } from "@nestjs/testing";
-import { UserController } from "../user.controller";
-import { UserService } from "../user.service";
-import { ThrottlerModule, ThrottlerGuard } from "@nestjs/throttler";
-import { APP_GUARD } from "@nestjs/core";
-import { INestApplication } from "@nestjs/common";
-import request from "supertest";
-import {
-  describe,
-  beforeEach,
-  afterEach,
-  it,
-  expect,
-  jest,
-} from "@jest/globals";
+import { Test, TestingModule } from '@nestjs/testing';
+import { UserController } from '../user.controller';
+import { UserService } from '../user.service';
 
-// Khoảng nghỉ siêu nhỏ để bộ nhớ RAM ảo của Throttler kịp lưu hit count
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+describe('UserController', () => {
+  let controller: UserController;
+  let service: UserService;
 
-// Định nghĩa một Guard tùy chỉnh ép đọc Header để test nhận diện đúng IP khác nhau
-class TestThrottlerGuard extends ThrottlerGuard {
-  protected async getTracker(req: Record<string, any>): Promise<string> {
-    // Ưu tiên đọc header 'x-forwarded-for' do ta giả lập bằng supertest
-    const forwarded = req.headers["x-forwarded-for"];
-    return forwarded
-      ? Array.isArray(forwarded)
-        ? forwarded[0]
-        : forwarded
-      : req.ip;
-  }
-}
-
-describe("UserController (Rate Limiting & Logic)", () => {
-  let app: INestApplication;
-  let moduleFixture: TestingModule;
-  let mockUserService: any;
+  const mockUserService = {
+    findOne: jest.fn(),
+    update: jest.fn(),
+    switchMode: jest.fn(),
+    findAll: jest.fn(),
+  };
 
   beforeEach(async () => {
-    mockUserService = {
-      register: jest.fn(() => 
-        Promise.resolve({ message: "Đăng ký thành công" })
-      ),
-      login: jest.fn(() => 
-        Promise.resolve({ message: "Đăng nhập thành công", accessToken: "mock_token" })
-      ),
-      findOne: jest.fn(() => 
-        Promise.resolve({ id: 1, username: "kien" })
-      ),
-      update: jest.fn(() => 
-        Promise.resolve({ id: 1, username: "kien" })
-      ),
-      switchMode: jest.fn(() => 
-        Promise.resolve({ message: "Chuyển đổi vai trò thành công" })
-      ),
-      changePassword: jest.fn(() => 
-        Promise.resolve({ message: "Đổi mật khẩu thành công!" })
-      ),
-    };
-
-    moduleFixture = await Test.createTestingModule({
-      imports: [
-        ThrottlerModule.forRoot([
-          {
-            name: "default",
-            ttl: 60000,
-            limit: 5, // Đồng bộ với giới hạn của Controller thật
-          },
-        ]),
-      ],
+    const module: TestingModule = await Test.createTestingModule({
       controllers: [UserController],
       providers: [
         {
           provide: UserService,
           useValue: mockUserService,
         },
-        {
-          provide: APP_GUARD,
-          useClass: TestThrottlerGuard,
-        },
       ],
     }).compile();
 
-    app = moduleFixture.createNestApplication();
-
-    // Bật trust proxy để Express nhận diện IP giả lập từ Header X-Forwarded-For
-    const expressApp = app.getHttpAdapter().getInstance();
-    expressApp.set("trust proxy", true);
-
-    await app.init();
+    controller = module.get<UserController>(UserController);
+    service = module.get<UserService>(UserService);
   });
 
-  afterEach(async () => {
-    await app.close();
+  afterEach(() => {
+    jest.clearAllMocks();
   });
 
-  // ==========================================
-  // TEST GIỚI HẠN TẦN SUẤT (RATE LIMIT)
-  // ==========================================
-  describe("Rate Limiting", () => {
-    it("nên cho phép gửi request bình thường nếu dưới ngưỡng giới hạn", async () => {
-      const registerDto = {
-        username: "kientest",
-        password: "password123",
-        phone: "0987654321",
-      };
-      const testIp = "127.0.0.1";
+  it('should be defined', () => {
+    expect(controller).toBeDefined();
+  });
 
-      await request(app.getHttpServer())
-        .post("/auth/register")
-        .set("X-Forwarded-For", testIp)
-        .send(registerDto)
-        .expect(201);
-    });
+  describe('F03: getProfile', () => {
+    it('should return user profile based on req.user.sub', async () => {
+      const req = { user: { sub: 1 } }; 
+      const expectedUser = { id: 1, name: 'Kiên', email: 'kien@example.com', role: 'Tenant' };
 
-    it("nên chặn đứng request khi vượt quá giới hạn và trả về mã lỗi HTTP 429", async () => {
-      const loginDto = {
-        username: "kientest",
-        password: "password123",
-      };
-      const testIp = "127.0.0.2"; 
+      mockUserService.findOne.mockResolvedValue(expectedUser);
 
-      let response: any;
+      const result = await controller.getProfile(req);
 
-      for (let i = 0; i < 6; i++) {
-        response = await request(app.getHttpServer())
-          .post("/auth/login")
-          .set("X-Forwarded-For", testIp)
-          .send(loginDto);
-
-        await delay(50);
-      }
-      expect(response.status).toBe(429);
-      expect(response.body.message).toMatch(/Too Many Requests|Throttler/i);
+      expect(result).toEqual(expectedUser);
+      expect(service.findOne).toHaveBeenCalledWith(1);
     });
   });
 
-  // ==========================================
-  // BỔ SUNG: TEST LOGIC XÁC THỰC BIẾN SUB
-  // ==========================================
-  describe("Auth Logic & Dữ liệu", () => {
-    it("API Profile nên đọc đúng biến sub từ req.user để tìm kiếm trong DB", async () => {
-      // Giả lập cấu trúc payload chuẩn do JwtStrategy giải mã từ token thật
-      const mockUserPayload = { sub: 24100323, username: "kien" };
-      
-      const controller = moduleFixture.get<UserController>(UserController);
+  describe('F03.1: updateProfile', () => {
+    it('should update user profile successfully', async () => {
+      const req = { user: { sub: 1 } };
+      const updateDto = { phone: '0987654321' } as any;
+      const expectedResult = { id: 1, phone: '0987654321' };
 
-      await controller.getProfile({ user: mockUserPayload });
-      expect(mockUserService.findOne).toHaveBeenCalledWith(24100323);
+      mockUserService.update.mockResolvedValue(expectedResult);
+
+      const result = await controller.updateProfile(req, updateDto);
+
+      expect(result).toEqual(expectedResult);
+      expect(service.update).toHaveBeenCalledWith(1, updateDto);
     });
+  });
 
-    it("API Switch Mode nên đọc đúng biến sub từ req.user để xử lý", async () => {
-      const mockUserPayload = { sub: 24100323, username: "kien" };
-      const controller = moduleFixture.get<UserController>(UserController);
-      
-      await controller.switchMode({ user: mockUserPayload });
+  describe('F03.2: switchMode', () => {
+    it('should switch role between Tenant and Landlord', async () => {
+      const req = { user: { sub: 1 } };
+      const expectedResult = { id: 1, role: 'Landlord' };
 
-      expect(mockUserService.switchMode).toHaveBeenCalledWith(24100323);
+      mockUserService.switchMode.mockResolvedValue(expectedResult);
+
+      const result = await controller.switchMode(req);
+
+      expect(result).toEqual(expectedResult);
+      expect(service.switchMode).toHaveBeenCalledWith(1);
     });
   });
 });

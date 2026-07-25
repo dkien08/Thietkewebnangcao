@@ -2,7 +2,7 @@ import { Controller, Get, Post, Body, Req } from '@nestjs/common';
 import { FavouriteService } from './favourite.service';
 import { ToggleFavouriteDto } from './dto/toggle-favourite.dto';
 
-@Controller('api/favorites')
+@Controller('favorites')
 export class FavouriteController {
   constructor(private readonly favouriteService: FavouriteService) {}
 

@@ -2,37 +2,167 @@
   text-align: center;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+/* ========================================================= */
+/* CUSTOM CSS CHO HOME - FLEXBOX RESPONSIVE LAYOUT           */
+/* ========================================================= */
+
+.layout-wrapper {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  background-color: #f4f6f9;
+  overflow: hidden;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
+/* 🟢 Sidebar bên trái */
+.sidebar {
+  width: 260px;
+  height: 100vh;
+  background-color: #0d1b3e;
+  color: #fff;
   display: flex;
   flex-direction: column;
+  flex-shrink: 0;
+  transition: width 0.3s cubic-bezier(0.2, 0, 0, 1);
+  overflow-y: auto;
+  z-index: 1000;
+}
+
+/* Khi thu hẹp Sidebar */
+.layout-wrapper.sidebar-collapsed .sidebar {
+  width: 70px;
+}
+
+.sidebar-header {
+  padding: 16px;
+  display: flex;
   align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  min-height: 60px;
+}
+
+/* Khối thông tin User trên Sidebar */
+.sidebar-user-box {
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background-color: rgba(255, 255, 255, 0.03);
+  overflow: hidden;
+}
+
+.sidebar-user-info {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.sidebar-user-info .greeting {
+  font-size: 0.75rem;
+  color: #a0aec0;
+}
+
+.sidebar-user-info .username {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #fff;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+/* Điều chỉnh icon & avatar khi thu gọn sidebar */
+.layout-wrapper.sidebar-collapsed .sidebar-user-box {
   justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+  padding: 12px 0;
 }
 
-.App-link {
-  color: #61dafb;
+.sidebar-menu {
+  padding: 15px 0;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.menu-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 20px;
+  color: #a0aec0;
+  cursor: pointer;
+  font-size: 0.88rem;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.menu-item:hover,
+.menu-item.active {
+  color: #fff;
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.menu-icon {
+  margin-right: 12px;
+  font-size: 1.1rem;
+}
+
+.layout-wrapper.sidebar-collapsed .menu-item {
+  justify-content: center;
+  padding: 12px 0;
+}
+
+.layout-wrapper.sidebar-collapsed .menu-icon {
+  margin-right: 0;
+}
+
+/* 🔵 Vùng nội dung chính bên phải */
+.main-content {
+  flex: 1; /* Tự động mở rộng chiếm toàn bộ không gian còn lại */
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+  transition: all 0.3s ease;
+  min-width: 0;
+}
+
+/* Header cùng màu #0d1b3e với Sidebar */
+.top-header {
+  height: 60px;
+  background-color: #0d1b3e;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 999;
+}
+
+.content-body {
+  padding: 20px;
+  flex: 1;
+}
+
+.room-card {
+  border-radius: 10px;
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.room-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1) !important;
+}
+
+.card-img-wrapper {
+  position: relative;
+  height: 140px;
+}
+
+.card-img-wrapper img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }

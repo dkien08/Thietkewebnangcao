@@ -85,10 +85,15 @@ export class UserService {
     if (!isMatch)
       throw new UnauthorizedException("Tên đăng nhập hoặc mật khẩu không đúng");
 
-    // 🔑 Payload đóng gói biến sub kế thừa kiến trúc mã hóa chuẩn JWT
+    // 🔑 Payload đóng gói biến sub
     const payload = { sub: user.id, username: user.username, role: user.role };
-    const accessToken = this.jwtService.sign(payload);
     
+    // ✅ ĐÃ SỬA LỖI TYPESCRIPT: Ép kiểu as any cho options để tránh lỗi Overload
+    const accessToken = await this.jwtService.signAsync(payload, {
+      secret: process.env.JWT_SECRET || 'fallback_jwt_secret_key_12345',
+      expiresIn: (process.env.JWT_EXPIRES_IN || '1d') as any,
+    });
+
     return {
       message: "Đăng nhập thành công",
       accessToken,
