@@ -4,14 +4,15 @@
   "description": "Project Tìm Phòng Trọ - NestJS Framework",
   "main": "src/main.ts",
   "scripts": {
-    "start:dev": "ts-node-dev --respawn --transpile-only src/main.ts",
+    "build": "nest build",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "start": "nest start",
+    "start:dev": "nest start --watch",
+    "start:debug": "nest start --debug --watch",
+    "start:prod": "node dist/main",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:cov": "jest --coverage",
-    "build": "npx nest build",
-    "start": "nest start",
-    "start:debug": "nest start --debug --watch",
-    "start:prod": "node dist/main"
+    "test:cov": "jest --coverage"
   },
   "dependencies": {
     "@nestjs/common": "^11.1.26",
@@ -48,7 +49,6 @@
   },
   "homepage": "https://github.com/dkien08/Thietkewebnangcao#readme",
   "devDependencies": {
-    "@nestjs/cli": "^11.0.24",
     "@nestjs/testing": "^11.1.28",
     "@types/bcrypt": "^6.0.0",
     "@types/cookie-parser": "^1.4.10",
@@ -80,7 +80,6 @@
     ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node",
-    "jest": {
       "moduleFileExtensions": [
         "js",
         "json",
@@ -98,4 +97,4 @@
       "testEnvironment": "node"
     }
   }
-}
+
