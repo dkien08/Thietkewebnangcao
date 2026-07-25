@@ -4,15 +4,31 @@ import cookieParser from "cookie-parser";
 import helmet from 'helmet';
 
 async function bootstrap() {
-  // Khởi tạo ứng dụng NestJS từ AppModule gốc
   const app = await NestFactory.create(AppModule);
 
-  // Bật CORS để nếu sau này có làm giao diện (Frontend) gọi API sẽ không bị chặn
-  app.enableCors();
+  // 1. Cấu hình CORS ĐẶT ĐẦU TIÊN (Dynamic Origin kiểm tra trực tiếp Request Origin)
+  app.enableCors({
+    origin: (origin, callback) => {
+      // Cho phép request không có origin (like mobile apps/postman) hoặc đúng domain
+      if (!origin || origin.includes('app.github.dev') || origin.includes('localhost')) {
+        callback(null, true);
+      } else {
+        callback(null, true); // Chấp nhận tất cả domain gửi kèm credentials
+      }
+    },
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    credentials: true,
+    allowedHeaders: 'Content-Type, Accept, Authorization',
+  });
 
   app.use(cookieParser());
 
-  app.use(helmet());
+  // 2. Cấu hình Helmet không đè CORS
+  app.use(
+    helmet({
+      crossOriginResourcePolicy: { policy: "cross-origin" },
+    })
+  );
 
   app.setGlobalPrefix("api");
 
