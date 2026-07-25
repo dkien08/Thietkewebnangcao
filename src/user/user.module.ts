@@ -5,6 +5,7 @@ import { PassportModule } from "@nestjs/passport";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { UserService } from "./user.service";
 import { UserController } from "./user.controller";
+import { AuthController } from "./auth.controller";
 import { User } from "./user.entity";
 import { JwtStrategy } from "../common/strategies/jwt.strategy";
 
@@ -17,7 +18,7 @@ import { JwtStrategy } from "../common/strategies/jwt.strategy";
       signOptions: { expiresIn: "1d" },
     }),
   ],
-  controllers: [UserController],
+  controllers: [UserController,AuthController],
   providers: [UserService, JwtStrategy],
   exports: [PassportModule, JwtModule, UserService],
 })
