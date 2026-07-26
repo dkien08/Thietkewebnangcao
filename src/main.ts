@@ -6,15 +6,11 @@ import helmet from 'helmet';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // 1. Cấu hình CORS ĐẶT ĐẦU TIÊN (Dynamic Origin kiểm tra trực tiếp Request Origin)
+  // 1. Cấu hình CORS (Phản hồi lại đúng Origin để hoạt động tốt với credentials: true)
   app.enableCors({
     origin: (origin, callback) => {
-      // Cho phép request không có origin (like mobile apps/postman) hoặc đúng domain
-      if (!origin || origin.includes('app.github.dev') || origin.includes('localhost')) {
-        callback(null, true);
-      } else {
-        callback(null, true); // Chấp nhận tất cả domain gửi kèm credentials
-      }
+      // Cho phép tất cả request (Localhost, Codespaces, Postman)
+      callback(null, origin || true);
     },
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
@@ -23,16 +19,18 @@ async function bootstrap() {
 
   app.use(cookieParser());
 
-  // 2. Cấu hình Helmet không đè CORS
+  // 2. Cấu hình Helmet cho phép chia sẻ tài nguyên cross-origin (ảnh, media)
   app.use(
     helmet({
       crossOriginResourcePolicy: { policy: "cross-origin" },
     })
   );
 
+  // 3. Prefix API chung
   app.setGlobalPrefix("api");
 
-  const port = process.env.PORT || 3001;
+  // 4. Đồng bộ Port 3000 với Frontend
+  const port = process.env.PORT || 3000;
   await app.listen(port);
 
   console.log(`🚀 Server đang chạy tại: http://localhost:${port}/api`);

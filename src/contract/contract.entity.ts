@@ -1,4 +1,11 @@
-import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn } from 'typeorm';
+
+export enum ContractStatus {
+  PENDING = 'PENDING',
+  ACTIVE = 'ACTIVE',
+  EXPIRED = 'EXPIRED',
+  TERMINATED = 'TERMINATED',
+}
 
 @Entity('contracts')
 export class Contract {
@@ -6,20 +13,26 @@ export class Contract {
   id!: number;
 
   @Column({ name: 'tenant_id' })
-  tenantId!: number; // ID của khách thuê (User)
+  tenantId!: number;
 
   @Column({ name: 'room_id' })
-  roomId!: number; // ID của phòng trọ (Room)
+  roomId!: number;
 
-  @Column({ type: 'date' })
-  startDate!: string; // Ngày bắt đầu hợp đồng
+  // 🔴 Đã sửa: Thêm nullable: true để tránh lỗi khi TypeORM alter table
+  @Column({ type: 'date', nullable: true })
+  startDate!: string;
 
-  @Column({ type: 'date' })
-  endDate!: string; // Ngày kết thúc hợp đồng
+  // 🔴 Đã sửa: Thêm nullable: true
+  @Column({ type: 'date', nullable: true })
+  endDate!: string;
 
   @Column({ type: 'decimal', precision: 10, scale: 2 })
-  price!: number; // Giá thuê thỏa thuận trên hợp đồng
+  price!: number;
 
-  @Column({ type: 'enum', enum: ['Active', 'Expired', 'Terminated'], default: 'Active' })
-  status!: string; // Trạng thái hợp đồng
+  @Column({
+    type: 'enum',
+    enum: ContractStatus,
+    default: ContractStatus.PENDING,
+  })
+  status!: ContractStatus;
 }

@@ -14,7 +14,7 @@ import {
 import { SearchRoomDto } from "./dto/search-room.dto";
 import { RoomService } from "./room.service";
 import { Room } from "./room.entity";
-import { JwtAuthGuard } from "../common/guards/jwt-auth.guard"; // Điều chỉnh đường dẫn JwtAuthGuard của nhóm bạn nhé
+import { JwtAuthGuard } from "../common/guards/jwt-auth.guard";
 
 @Controller("rooms")
 export class RoomController {
@@ -37,7 +37,7 @@ export class RoomController {
   @UseGuards(JwtAuthGuard)
   create(@Req() req: any, @Body() roomData: Partial<Room>) {
     this.checkLandlordRole(req);
-    return this.roomService.create(req.user.sub, roomData); // Dùng biến sub chuẩn bảo mật
+    return this.roomService.create(req.user.sub, roomData);
   }
 
   // F11: Xem danh sách phòng thuộc sở hữu của riêng chủ nhà đang đăng nhập
@@ -72,17 +72,25 @@ export class RoomController {
   // =========================================================================
   // [ZONE 2] KHU VỰC CỦA TV2 
   // TV2 VUI LÒNG CHỈ VIẾT CODE CỦA BẠN TỪ DÒNG NÀY TRỞ XUỐNG DƯỚI
-  // Các chức năng phụ trách: F04, F05, F06 (Xem/Tìm kiếm) & F19, F20 (Ảnh phòng)
   // =========================================================================
-@Get()
+
+  @Get()
   findAllAvailable() {
     return this.roomService.findAllAvailable();
   }
 
-  // F06: Bộ lọc tìm kiếm nâng cao (Được đặt trên route /:id để tránh xung đột đường dẫn)
+  // F06: Bộ lọc tìm kiếm nâng cao
   @Get('search')
   searchRooms(@Query() searchDto: SearchRoomDto) {
     return this.roomService.searchRooms(searchDto);
+  }
+
+  // 🟢 BỔ SUNG MỚI: API dành cho Tenant lấy thông tin phòng đang thuê thực tế
+  // (ĐẶT Ở ĐÂY - Trên route :id để tránh bị đè route)
+  @Get('my-active-room')
+  @UseGuards(JwtAuthGuard)
+  findMyActiveRoom(@Req() req: any) {
+    return this.roomService.findActiveRoomByTenantId(req.user.sub);
   }
 
   // F05: Xem chi tiết một phòng trọ cụ thể

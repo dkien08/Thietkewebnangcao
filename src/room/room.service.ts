@@ -3,12 +3,16 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Room } from './room.entity';
 import { RoomImage } from './room-image.entity';
+import { Contract, ContractStatus } from '../contract/contract.entity';
 
 @Injectable()
 export class RoomService {
   constructor(
     @InjectRepository(Room)
     private roomRepository: Repository<Room>,
+
+    @InjectRepository(Contract)
+    private contractRepository: Repository<Contract>,
   ) { }
 
   // =========================================================================
@@ -34,7 +38,7 @@ export class RoomService {
     });
   }
 
-  // Hàm hỗ trợ tìm phòng và kiểm tra quyền sở hữu bài đăng (Tránh việc chủ nhà sửa/xóa nhầm phòng người khác)
+  // Hàm hỗ trợ tìm phòng và kiểm tra quyền sở hữu bài đăng
   private async findAndVerifyOwnership(id: number, landlordId: number): Promise<Room> {
     const room = await this.roomRepository.findOne({ where: { id } });
     if (!room) {
@@ -46,7 +50,7 @@ export class RoomService {
     return room;
   }
 
-  // F12: Cập nhật thông tin chi tiết phòng / Chuyển đổi trạng thái sang bảo trì
+  // F12: Cập nhật thông tin chi tiết phòng
   async update(id: number, landlordId: number, updateData: Partial<Room>): Promise<Room> {
     await this.findAndVerifyOwnership(id, landlordId);
     await this.roomRepository.update(id, updateData);
@@ -62,13 +66,11 @@ export class RoomService {
     return { message: `Xóa thành công phòng trọ có ID ${id}` };
   }
 
-
   // =========================================================================
   // [ZONE 2] KHU VỰC LOGIC CỦA TV2
-  // TV2 VUI LÒNG CHỈ THÊM CÁC PHƯƠNG THỨC CỦA BẠN TỪ DÒNG NÀY TRỞ XUỐNG DƯỚI
-  // Các hàm cần viết: findAll, findOneDetail, searchRooms, uploadImages, deleteImage...
   // =========================================================================
-  // F04: Lấy danh sách tất cả phòng trọ đang trống (status = Available), mới nhất lên đầu
+
+  // F04: Lấy danh sách tất cả phòng trọ đang trống
   async findAllAvailable(): Promise<Room[]> {
     return await this.roomRepository.find({
       where: { status: 'Available' },
@@ -77,12 +79,44 @@ export class RoomService {
     });
   }
 
-  // F05: Xem chi tiết 1 phòng trọ (JOIN với room_images và landlord để lấy SĐT)
+  // 🟢 BỔ SUNG MỚI: Lấy phòng trọ đang được thuê thực tế của Tenant (Đã được phẳng hóa)
+  async findActiveRoomByTenantId(tenantId: number | string) {
+    const numericTenantId = Number(tenantId); // Ép kiểu về number để khớp DB
+
+    const activeContract = await this.contractRepository.findOne({
+      where: {
+        tenantId: numericTenantId,
+        status: ContractStatus.ACTIVE,
+      },
+    });
+
+    if (!activeContract) {
+      return null;
+    }
+
+    const room = await this.roomRepository.findOne({
+      where: { id: activeContract.roomId },
+      relations: ['images'],
+    });
+
+    if (!room) return null;
+
+    // Phẳng hóa dữ liệu: Kết hợp thuộc tính của Room và Contract thành 1 Object
+    return {
+      ...room,
+      contractId: activeContract.id,
+      startDate: activeContract.startDate,
+      endDate: activeContract.endDate,
+      monthlyPrice: activeContract.price || room.price,
+    };
+  }
+
+  // F05: Xem chi tiết 1 phòng trọ
   async findOneDetail(id: number): Promise<Room> {
     const room = await this.roomRepository.createQueryBuilder('room')
       .leftJoinAndSelect('room.images', 'images')
       .leftJoin('room.landlord', 'landlord')
-      .addSelect(['landlord.id', 'landlord.phone', 'landlord.username']) // Chỉ lấy thông tin SĐT & tên chủ nhà
+      .addSelect(['landlord.id', 'landlord.phone', 'landlord.username'])
       .where('room.id = :id', { id })
       .getOne();
 
@@ -93,7 +127,7 @@ export class RoomService {
     return room;
   }
 
-  // F06: Bộ lọc tìm kiếm nâng cao (QueryBuilder lọc động)
+  // F06: Bộ lọc tìm kiếm nâng cao
   async searchRooms(filters: any): Promise<Room[]> {
     const query = this.roomRepository.createQueryBuilder('room')
       .leftJoinAndSelect('room.images', 'images')
@@ -130,7 +164,7 @@ export class RoomService {
     return await query.orderBy('room.createdAt', 'DESC').getMany();
   }
 
-  // F19: Thêm ảnh phòng trọ (Lưu URL vào DB)
+  // F19: Thêm ảnh phòng trọ
   async addRoomImage(roomId: number, landlordId: number, imageUrl: string, publicId?: string) {
     await this.findAndVerifyOwnership(roomId, landlordId);
 
@@ -154,8 +188,6 @@ export class RoomService {
     if (!image) {
       throw new NotFoundException(`Không tìm thấy ảnh với ID ${imageId} thuộc phòng ${roomId}`);
     }
-
-    // Note: Thực hiện xóa file vật lý trên Cloudinary bằng publicId tại đây nếu tích hợp Cloudinary SDK
 
     await imageRepository.delete(imageId);
     return { message: `Xóa thành công ảnh có ID ${imageId}` };
