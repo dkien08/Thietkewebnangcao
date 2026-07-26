@@ -1,33 +1,67 @@
-import { Controller, Get, Post, Put, Delete, Body, Param } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Body,
+  Param,
+  UseGuards,
+  Req,
+  ParseIntPipe,
+} from '@nestjs/common';
 import { ContractService } from './contract.service';
-import { Contract } from './contract.entity';
+import { CreateContractDto } from './dto/contract.dto';
+import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'; // Đổi đường dẫn cho khớp với dự án của bạn
 
 @Controller('contracts')
+@UseGuards(JwtAuthGuard)
 export class ContractController {
   constructor(private readonly contractService: ContractService) {}
 
+  // Hàm hỗ trợ lấy User ID từ Request an toàn (Chống undefined)
+  private getUserId(req: any): number {
+    return req.user?.id || req.user?.userId || req.user?.sub;
+  }
+
+  // F08: POST /api/contracts (Tenant tạo yêu cầu thuê phòng)
   @Post()
-  create(@Body() contractData: Partial<Contract>) {
-    return this.contractService.create(contractData);
+  create(@Req() req: any, @Body() dto: CreateContractDto) {
+    const tenantId = this.getUserId(req);
+    return this.contractService.createContract(tenantId, dto);
   }
 
-  @Get()
-  findAll() {
-    return this.contractService.findAll();
+  // F09: GET /api/contracts/tenant (Tenant xem danh sách hợp đồng của mình)
+  @Get('tenant')
+  getTenantContracts(@Req() req: any) {
+    const tenantId = this.getUserId(req);
+    return this.contractService.findByTenant(tenantId);
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.contractService.findOne(+id);
+  // F14: GET /api/contracts/landlord (Landlord xem các yêu cầu gửi đến phòng mình)
+  @Get('landlord')
+  getLandlordContracts(@Req() req: any) {
+    const landlordId = this.getUserId(req);
+    return this.contractService.findByLandlord(landlordId);
   }
 
-  @Put(':id')
-  update(@Param('id') id: string, @Body() updateData: Partial<Contract>) {
-    return this.contractService.update(+id, updateData);
+  // F15: PUT /api/contracts/:id/approve (Landlord duyệt hợp đồng)
+  @Put(':id/approve')
+  approve(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    const landlordId = this.getUserId(req);
+    return this.contractService.approveContract(id, landlordId);
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.contractService.remove(+id);
+  // F15.1: PUT /api/contracts/:id/reject (Landlord từ chối hợp đồng)
+  @Put(':id/reject')
+  reject(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    const landlordId = this.getUserId(req);
+    return this.contractService.rejectContract(id, landlordId);
+  }
+
+  // F17: PUT /api/contracts/:id/terminate (Landlord / Tenant chấm dứt hợp đồng)
+  @Put(':id/terminate')
+  terminate(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    const userId = this.getUserId(req);
+    return this.contractService.terminateContract(id, userId);
   }
 }
