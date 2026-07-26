@@ -6,7 +6,7 @@ import helmet from "helmet";
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // 1. Cấu hình CORS ĐẶT ĐẦU TIÊN (Dynamic Origin kiểm tra trực tiếp Request Origin)
+  // 1. Cấu hình CORS (Phản hồi lại đúng Origin để hoạt động tốt với credentials: true)
   app.enableCors({
     origin: (origin, callback) => {
       // Cho phép request không có origin (like mobile apps/postman) hoặc đúng domain
@@ -27,13 +27,14 @@ async function bootstrap() {
 
   app.use(cookieParser());
 
-  // 2. Cấu hình Helmet không đè CORS
+  // 2. Cấu hình Helmet cho phép chia sẻ tài nguyên cross-origin (ảnh, media)
   app.use(
     helmet({
       crossOriginResourcePolicy: { policy: "cross-origin" },
     }),
   );
 
+  // 3. Prefix API chung
   app.setGlobalPrefix("api");
 
   const port = process.env.PORT || 3001;

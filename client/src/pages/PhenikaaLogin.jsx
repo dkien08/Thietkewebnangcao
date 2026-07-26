@@ -23,25 +23,49 @@ const PhenikaaLogin = ({ onLoginSuccess, onSwitchToRegister }) => {
 
       setSuccessMessage(response.data?.message || 'Đăng nhập thành công!');
 
-      // 🌟 LỰA CHỌN DỮ LIỆU THÔNG MINH:
-      // Lấy profile đã được lưu nếu người dùng từng chỉnh sửa
-      const savedProfile = localStorage.getItem('saved_user_profile');
-      
-      if (savedProfile) {
-        localStorage.setItem('user', savedProfile);
-      } else if (response.data?.user) {
-        localStorage.setItem('user', JSON.stringify(response.data.user));
+      // 🔍 1. TRÍCH XUẤT TOKEN CHUẨN TỪ API (Hỗ trợ mọi kiểu cấu trúc response backend)
+      const token = 
+        response.data?.token || 
+        response.data?.accessToken || 
+        response.data?.access_token ||
+        response.data?.data?.token ||
+        response.data?.data?.accessToken;
+
+      if (token) {
+        localStorage.setItem('token', token);
       } else {
-        localStorage.setItem('user', JSON.stringify({ username }));
+        console.warn('Cảnh báo: Backend không trả về token trong response!');
       }
 
-      localStorage.setItem('token', response.data?.token || 'mock-jwt-token');
+      // 🔍 2. Lấy thông tin profile vừa sửa gần nhất trong cache (nếu có)
+      const savedProfileStr = localStorage.getItem('saved_user_profile');
+      let savedProfile = null;
+      if (savedProfileStr) {
+        try {
+          savedProfile = JSON.parse(savedProfileStr);
+        } catch (err) {
+          savedProfile = null;
+        }
+      }
+
+      // 💡 LOGIC XỬ LÝ THÔNG TIN TÀI KHOẢN:
+      const userData = response.data?.user || response.data?.data?.user || response.data;
+      if (savedProfile && (savedProfile.username === username || savedProfile.email === username)) {
+        localStorage.setItem('user', JSON.stringify(savedProfile));
+      } else if (userData && typeof userData === 'object') {
+        localStorage.setItem('user', JSON.stringify(userData));
+        localStorage.removeItem('saved_user_profile');
+      } else {
+        const newUser = { username };
+        localStorage.setItem('user', JSON.stringify(newUser));
+        localStorage.removeItem('saved_user_profile');
+      }
 
       setTimeout(() => {
         if (onLoginSuccess) {
           onLoginSuccess();
         }
-      }, 800);
+      }, 500);
 
     } catch (error) {
       if (error.response && error.response.data) {
@@ -52,13 +76,28 @@ const PhenikaaLogin = ({ onLoginSuccess, onSwitchToRegister }) => {
           setErrorMessage(resData.message || 'Tài khoản hoặc mật khẩu không chính xác!');
         }
       } else {
-        // Fallback giả lập khi chạy local dev
-        const savedProfile = localStorage.getItem('saved_user_profile');
-        if (savedProfile) {
-          localStorage.setItem('user', savedProfile);
-        } else {
-          localStorage.setItem('user', JSON.stringify({ username }));
+        // 🛠️ Fallback cho môi trường Local / Offline Mock API
+        const savedProfileStr = localStorage.getItem('saved_user_profile');
+        let savedProfile = null;
+        if (savedProfileStr) {
+          try {
+            savedProfile = JSON.parse(savedProfileStr);
+          } catch (err) {
+            savedProfile = null;
+          }
         }
+
+        if (savedProfile && (savedProfile.username === username || savedProfile.email === username)) {
+          localStorage.setItem('user', JSON.stringify(savedProfile));
+        } else {
+          const mockUser = {
+            username: username,
+            fullName: username,
+          };
+          localStorage.setItem('user', JSON.stringify(mockUser));
+          localStorage.removeItem('saved_user_profile');
+        }
+
         localStorage.setItem('token', 'mock-jwt-token');
         setSuccessMessage('Đăng nhập thành công!');
 
@@ -66,7 +105,7 @@ const PhenikaaLogin = ({ onLoginSuccess, onSwitchToRegister }) => {
           if (onLoginSuccess) {
             onLoginSuccess();
           }
-        }, 800);
+        }, 500);
       }
     } finally {
       setLoading(false);
@@ -163,20 +202,6 @@ const PhenikaaLogin = ({ onLoginSuccess, onSwitchToRegister }) => {
                 Đăng ký ngay
               </span>
             </div>
-
-            <div className="divider mb-4">
-              <span>Hoặc đăng nhập</span>
-            </div>
-
-            <Button variant="light" className="w-100 btn-microsoft" disabled={loading}>
-              <svg className="ms-logo me-2" width="18" height="18" viewBox="0 0 21 21">
-                <rect x="1" y="1" width="9" height="9" fill="#f25022"/>
-                <rect x="11" y="1" width="9" height="9" fill="#7fba00"/>
-                <rect x="1" y="11" width="9" height="9" fill="#00a4ef"/>
-                <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
-              </svg>
-              Sign in using Microsoft
-            </Button>
           </Form>
         </div>
       </div>

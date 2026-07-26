@@ -20,5 +20,5 @@
     "noFallthroughCasesInSwitch": true,
     "ignoreDeprecations": "6.0"
   },
-  "include": ["src/**/*", "client/src/pages/PhenikaaLayout.jsx"]
+  "include": ["src/**/*", "client/src/pages/Login/PhenikaaLayout.jsx"]
 }
