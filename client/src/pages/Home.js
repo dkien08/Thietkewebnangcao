@@ -18,100 +18,25 @@ import './Home.css';
 import axios from 'axios';
 
 
-// Dữ liệu mẫu khởi tạo dự phòng khi chưa kết nối DB
-const INITIAL_ROOMS = [
-  {
-    id: 'P101',
-    title: 'P101 — Nam Từ Liêm',
-    addressDetail: '123 Lê Đức Thọ, Nam Từ Liêm, Hà Nội',
-    district: 'Nam Từ Liêm',
-    roomType: 'Studio',
-    price: 4500000,
-    area: 28,
-    rating: 4.7,
-    reviewCount: 23,
-    hasAc: true,
-    hasWm: true,
-    status: 'RENTED',
-    tenantName: 'Trần Thị Hương',
-    landlordName: 'Nguyễn Minh Tuấn',
-    landlordPhone: '0901234567',
-    description: 'Phòng studio đầy đủ đồ, ban công thoáng mát, an ninh 24/7.',
-    images: [{ id: 1, url: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=500&q=80' }]
-  },
-  {
-    id: 'P202',
-    title: 'P202 — Cầu Giấy',
-    addressDetail: 'Cầu Giấy, Hà Nội',
-    district: 'Cầu Giấy',
-    roomType: '1 phòng ngủ',
-    price: 5200000,
-    area: 35,
-    rating: 4.5,
-    reviewCount: 18,
-    hasAc: true,
-    hasWm: false,
-    status: 'AVAILABLE',
-    tenantName: '',
-    landlordName: 'Nguyễn Minh Tuấn',
-    landlordPhone: '0901234567',
-    description: 'Cạnh các trường đại học lớn, giờ giấc tự do, không chung chủ.',
-    images: [{ id: 2, url: 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=500&q=80' }]
-  },
-  {
-    id: 'P301',
-    title: 'P301 — Thanh Xuân',
-    addressDetail: 'Thanh Xuân, Hà Nội',
-    district: 'Thanh Xuân',
-    roomType: 'Khép kín',
-    price: 3200000,
-    area: 18,
-    rating: 4.2,
-    reviewCount: 31,
-    hasAc: true,
-    hasWm: true,
-    status: 'AVAILABLE',
-    tenantName: '',
-    landlordName: 'Nguyễn Minh Tuấn',
-    landlordPhone: '0901234567',
-    description: 'Phòng riêng khép kín sinh viên, giá hợp lý, ngay trung tâm.',
-    images: [{ id: 3, url: 'https://images.unsplash.com/photo-1554995207-c18c203602cb?auto=format&fit=crop&w=500&q=80' }]
-  }
-];
+// Dữ liệu khởi tạo trống khi chưa có dữ liệu từ Database
+const INITIAL_ROOMS = [];
 
-const INITIAL_REQUESTS = [
-  { id: 'REQ-101', roomId: 'P101', roomTitle: 'P101 — Studio Lê Đức Thọ', tenantName: 'Trần Thị Hương', tenantPhone: '0987654321', startDate: '2026-01-01', endDate: '2027-01-01', price: 4500000, status: 'APPROVED' },
-  { id: 'REQ-102', roomId: 'P305', roomTitle: 'Căn hộ Mini 1PN', tenantName: 'Trần Thị Hương', tenantPhone: '0987654321', startDate: '2025-12-10', endDate: '2026-12-10', price: 3900000, status: 'REJECTED' },
-  { id: 'REQ-103', roomId: 'P202', roomTitle: 'Phòng Khép Kín P202', tenantName: 'Trần Thị Hương', tenantPhone: '0987654321', startDate: '2026-06-01', endDate: '2027-06-01', price: 5200000, status: 'PENDING' }
-];
+const INITIAL_REQUESTS = [];
 
-const INITIAL_NOTIFICATIONS = [
-  {
-    id: 'NOTIF-1',
-    title: 'Yêu cầu thuê mới',
-    content: 'Khách hàng Trần Văn Nam vừa gửi yêu cầu thuê phòng #P102.',
-    time: '10 phút trước',
-    isRead: false,
-    type: 'REQUEST'
-  },
-  {
-    id: 'NOTIF-2',
-    title: 'Thanh toán thành công',
-    content: 'Hệ thống đã nhận thanh toán tiền thuê phòng tháng này của phòng #P101.',
-    time: '2 giờ trước',
-    isRead: true,
-    type: 'SYSTEM'
-  }
-];
+const INITIAL_NOTIFICATIONS = [];
 
-const INITIAL_MAINTENANCE_REPORTS = [
-  { id: 'MR-01', roomId: 'P101', title: 'Điều hòa không mát', category: 'Điện lạnh', date: '10/06/2026', resolvedDate: '12/06/2026', status: 'done', reporter: 'Trần Thị Hương', phone: '0987654321', desc: 'Máy phát ra tiếng ồn nhẹ và rò rỉ nước ở cục lạnh.' },
-  { id: 'MR-02', roomId: 'P101', title: 'Vòi nước bị rỉ', category: 'Nước', date: '18/07/2026', resolvedDate: null, status: 'processing', reporter: 'Trần Thị Hương', phone: '0987654321', desc: 'Vòi rỉ nước liên tục ở nhà vệ sinh.' },
-];
+const INITIAL_MAINTENANCE_REPORTS = [];
 
+// Các hàm tiện ích (Utility functions) giữ nguyên
 const removeVietnameseTones = (str) => {
   if (!str) return '';
-  return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase().trim();
+  return str
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D')
+    .toLowerCase()
+    .trim();
 };
 
 const Stars = ({ rating }) => {
@@ -153,9 +78,9 @@ const MaintenanceManagementView = ({ mrList, setMrList, rooms, setRooms, addNoti
 
     const target = mrList.find(i => i.id === mrId);
     const statusText = newStatus === 'done' ? 'Đã hoàn thành' : newStatus === 'processing' ? 'Đang sửa chữa' : 'Chờ xử lý';
-    
+
     message.success(`Đã cập nhật trạng thái sự cố #${mrId} sang: ${statusText}`);
-    
+
     if (addNotification && target) {
       addNotification(
         'Cập nhật tiến độ bảo trì',
@@ -187,7 +112,7 @@ const MaintenanceManagementView = ({ mrList, setMrList, rooms, setRooms, addNoti
     };
 
     setMrList([newMR, ...mrList]);
-    
+
     // Nếu chọn trạng thái là "Đang sửa", có thể chuyển trạng thái phòng sang MAINTENANCE nếu muốn
     if (values.updateRoomStatus) {
       setRooms(rooms.map(r => r.id === values.roomId ? { ...r, status: 'MAINTENANCE' } : r));
@@ -751,32 +676,79 @@ const AnalyticsReportView = ({ rooms, requests, mrList }) => {
 // =========================================================================
 // COMPONENT: QUẢN LÝ PHÒNG DÀNH CHO NGƯỜI THUÊ (TENANT PORTAL)
 // =========================================================================
-const TenantRoomManagement = ({ requests, setRequests, rooms, user, onGoToSearch, mrList, setMrList }) => {
+const TenantRoomManagement = ({ requests = [], setRequests, user, onGoToSearch, mrList = [], setMrList }) => {
+  // States quản lý Data & UI
+  const [activeRoomDetail, setActiveRoomDetail] = useState(null);
+  const [loadingActiveRoom, setLoadingActiveRoom] = useState(false);
+
   const [showMR, setShowMR] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
   const [showContract, setShowContract] = useState(false);
   const [selectedContractReq, setSelectedContractReq] = useState(null);
+  const [submittingMR, setSubmittingMR] = useState(false);
 
   const [mrForm, setMrForm] = useState({ title: '', category: 'Khác', desc: '' });
 
-  // Tự động tìm phòng active được phê duyệt của người thuê hiện tại
-  const activeContract = useMemo(() => {
-    return requests.find(r => (r.status === 'APPROVED' || r.status === 'active'));
-  }, [requests]);
+// 1. TẢI VÀ ĐỒNG BỘ PHÒNG DÀNH CHO NGƯỜI THUÊ
+useEffect(() => {
+  const fetchMyActiveRoom = async () => {
+    setLoadingActiveRoom(true);
+    try {
+      let activeRoom = null;
 
-  const activeRoomDetail = useMemo(() => {
-    if (!activeContract) return null;
-    return rooms.find(room => room.id === activeContract.roomId) || {
-      id: activeContract.roomId,
-      title: activeContract.roomTitle,
-      addressDetail: '📍 Chi tiết địa chỉ phòng trọ',
-      price: activeContract.price,
-      landlordName: 'Nguyễn Minh Tuấn',
-      landlordPhone: '0901234567',
-      images: [{ url: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=600&q=80' }]
-    };
-  }, [activeContract, rooms]);
+      // Bước 1: Thử lấy dữ liệu thực từ API Backend
+      if (typeof roomApi !== 'undefined' && roomApi.getMyActiveRoom) {
+        const res = await roomApi.getMyActiveRoom();
+        const data = res?.data !== undefined ? res.data : res;
+        if (Array.isArray(data) && data.length > 0) activeRoom = data[0];
+        else if (data && typeof data === 'object' && Object.keys(data).length > 0) activeRoom = data;
+      }
 
+      // Bước 2: NẾU API CHƯA CÓ -> Tự động đồng bộ từ danh sách `requests` có trạng thái Active
+      if (!activeRoom && Array.isArray(requests) && requests.length > 0) {
+        const activeReq = requests.find(r => 
+          ['approved', 'active'].includes((r.status || '').toLowerCase())
+        );
+
+        if (activeReq) {
+          activeRoom = {
+            id: activeReq.roomId || activeReq.id,
+            title: activeReq.roomTitle || activeReq.room?.title || `Phòng ${activeReq.roomId}`,
+            price: activeReq.price || activeReq.room?.price || 0,
+            addressDetail: activeReq.address || activeReq.room?.address || 'Địa chỉ phòng trọ',
+            area: activeReq.area || activeReq.room?.area || 25,
+            landlordName: activeReq.landlordName || 'Chủ nhà',
+            landlordPhone: activeReq.landlordPhone || '0901234567',
+            images: activeReq.images || activeReq.room?.images || []
+          };
+        }
+      }
+
+      setActiveRoomDetail(activeRoom);
+    } catch (error) {
+      console.error('Lỗi khi tải thông tin phòng đang thuê:', error);
+      
+      // Fallback khi gọi API gặp lỗi: Vẫn tìm phòng Active trong requests
+      const activeReq = requests.find(r => ['approved', 'active'].includes((r.status || '').toLowerCase()));
+      if (activeReq) {
+        setActiveRoomDetail({
+          id: activeReq.roomId || activeReq.id,
+          title: activeReq.roomTitle || `Phòng ${activeReq.roomId}`,
+          price: activeReq.price || 0,
+          addressDetail: 'Địa chỉ phòng trọ'
+        });
+      } else {
+        setActiveRoomDetail(null);
+      }
+    } finally {
+      setLoadingActiveRoom(false);
+    }
+  };
+
+  fetchMyActiveRoom();
+}, [requests]); // 🌟 Quan trọng: Lắng nghe [requests] để khi thuê thành công là khối trên tự cập nhật ngay lập tức!
+
+  // Cấu hình UI cho các trạng thái yêu cầu thuê
   const statusCfg = {
     APPROVED: { label: 'Active', bg: '#f6ffed', text: '#52c41a', border: '#b7eb8f' },
     active: { label: 'Active', bg: '#f6ffed', text: '#52c41a', border: '#b7eb8f' },
@@ -793,49 +765,70 @@ const TenantRoomManagement = ({ requests, setRequests, rooms, user, onGoToSearch
     done: { label: 'Hoàn thành', color: 'green' },
   };
 
-  const handleAddMR = () => {
+  // 2. Thêm báo cáo sự cố
+  const handleAddMR = async () => {
     if (!mrForm.title.trim()) return message.error('Vui lòng nhập tiêu đề sự cố!');
+
+    setSubmittingMR(true);
     const newMR = {
-      id: `MR-0${mrList.length + 1}`,
-      roomId: activeContract?.roomId || 'P101',
+      id: `MR-${Date.now()}`,
+      roomId: activeRoomDetail?.id || activeRoomDetail?._id || 'P101',
       title: mrForm.title,
       category: mrForm.category,
+      desc: mrForm.desc,
       date: new Date().toLocaleDateString('vi-VN'),
-      resolvedDate: null,
       status: 'pending',
-      reporter: user?.fullName || 'Trần Thị Hương',
-      phone: user?.phone || '0987654321',
-      desc: mrForm.desc
+      reporter: user?.fullName || user?.username || 'Khách thuê',
     };
-    setMrList([newMR, ...mrList]);
-    setShowMR(false);
-    setMrForm({ title: '', category: 'Khác', desc: '' });
-    message.success('Đã gửi báo cáo sự cố tới chủ nhà!');
+
+    try {
+      // Khi backend bổ sung API Báo cáo sự cố sẽ gọi ở đây
+    } catch (error) {
+      console.warn('Cập nhật local state báo cáo sự cố:', error);
+    } finally {
+      if (typeof setMrList === 'function') {
+        setMrList([newMR, ...mrList]);
+      }
+      setSubmittingMR(false);
+      setShowMR(false);
+      setMrForm({ title: '', category: 'Khác', desc: '' });
+      message.success('Đã gửi báo cáo sự cố tới chủ nhà!');
+    }
   };
 
-  const handleCancelRequest = (reqId) => {
-    setRequests(requests.map(r => r.id === reqId ? { ...r, status: 'cancelled' } : r));
+  // 3. Hủy yêu cầu thuê
+  const handleCancelRequest = async (reqId) => {
+    if (typeof setRequests === 'function') {
+      setRequests(requests.map(r => (r.id === reqId || r._id === reqId) ? { ...r, status: 'cancelled' } : r));
+    }
     message.info('Đã hủy yêu cầu thuê phòng.');
   };
 
-  const handleDeleteRequest = (reqId) => {
-    setRequests(requests.filter(r => r.id !== reqId));
+  // 4. Xóa yêu cầu
+  const handleDeleteRequest = async (reqId) => {
+    if (typeof setRequests === 'function') {
+      setRequests(requests.filter(r => r.id !== reqId && r._id !== reqId));
+    }
     message.success('Đã xóa lịch sử yêu cầu.');
   };
 
   const handleOpenContractModal = (req) => {
-    setSelectedContractReq(req || activeContract);
+    setSelectedContractReq(req);
     setShowContract(true);
   };
 
   return (
     <div style={{ padding: '4px' }}>
       <h4 style={{ fontWeight: 800, color: '#111827', marginBottom: 20 }}>
-        🏠 Quản lý phòng của tôi
+        <HomeOutlined style={{ marginRight: 8, color: '#ff6b00' }} /> Quản lý phòng của tôi
       </h4>
 
       {/* 🟢 KHỐI 1: THÔNG TIN PHÒNG ĐANG THUÊ ACTIVE */}
-      {activeContract && activeRoomDetail ? (
+      {loadingActiveRoom ? (
+        <div style={{ background: '#fff', borderRadius: 16, padding: 40, textAlign: 'center', marginBottom: 24 }}>
+          <Spin size="large" tip="Đang tải thông tin phòng đang thuê..." />
+        </div>
+      ) : activeRoomDetail ? (
         <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #e5e7eb', padding: 20, marginBottom: 24, boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
             <span style={{ fontSize: 13, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
@@ -850,7 +843,7 @@ const TenantRoomManagement = ({ requests, setRequests, rooms, user, onGoToSearch
             <Col md={4} xs={12}>
               <div style={{ borderRadius: 12, overflow: 'hidden', height: 180, background: '#f3f4f6' }}>
                 <img
-                  src={activeRoomDetail.images?.[0]?.url || activeRoomDetail.images?.[0]?.imageUrl || 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=600&q=80'}
+                  src={activeRoomDetail.images?.[0]?.imageUrl || activeRoomDetail.images?.[0]?.url || 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=600&q=80'}
                   alt="Phòng đang thuê"
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                 />
@@ -859,54 +852,54 @@ const TenantRoomManagement = ({ requests, setRequests, rooms, user, onGoToSearch
 
             <Col md={8} xs={12}>
               <h5 style={{ fontWeight: 800, color: '#111827', marginBottom: 6 }}>
-                {activeRoomDetail.title}
+                {activeRoomDetail.title || activeRoomDetail.name || `Phòng ${activeRoomDetail.id}`}
               </h5>
               <p style={{ color: '#6b7280', fontSize: 13, marginBottom: 12 }}>
-                📍 {activeRoomDetail.addressDetail || activeRoomDetail.district}
+                📍 {activeRoomDetail.addressDetail || activeRoomDetail.address || activeRoomDetail.district || 'Địa chỉ phòng trọ'}
               </p>
 
               <Row className="g-2 mb-3" style={{ fontSize: 13 }}>
                 <Col sm={6}>
                   <span style={{ color: '#6b7280' }}>Giá thuê: </span>
-                  <strong style={{ color: '#ff6b00', fontSize: 15 }}>{Number(activeRoomDetail.price || activeContract.price).toLocaleString()}đ/tháng</strong>
+                  <strong style={{ color: '#ff6b00', fontSize: 15 }}>{Number(activeRoomDetail.price || 0).toLocaleString()}đ/tháng</strong>
                 </Col>
                 <Col sm={6}>
-                  <span style={{ color: '#6b7280' }}>Thời hạn HĐ: </span>
-                  <strong>{activeContract.startDate} – {activeContract.endDate}</strong>
+                  <span style={{ color: '#6b7280' }}>Diện tích: </span>
+                  <strong>{activeRoomDetail.area || 25} m²</strong>
                 </Col>
                 <Col sm={12}>
                   <span style={{ color: '#6b7280' }}>Chủ nhà: </span>
-                  <strong>{activeRoomDetail.landlordName || 'Nguyễn Minh Tuấn'} · {activeRoomDetail.landlordPhone || '0901234567'}</strong>
+                  <strong>
+                    <UserOutlined style={{ marginRight: 4 }} />
+                    {activeRoomDetail.landlordName || activeRoomDetail.landlord?.fullName || 'Chủ nhà'} · 
+                    <PhoneOutlined style={{ marginLeft: 6, marginRight: 4 }} />
+                    {activeRoomDetail.landlordPhone || activeRoomDetail.landlord?.phone || '0901234567'}
+                  </strong>
                 </Col>
               </Row>
-
-              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 16 }}>
-                {['Điều hòa', 'Nóng lạnh', 'Wifi', 'Ban công', 'Tủ lạnh'].map((item, idx) => (
-                  <span key={idx} style={{ background: '#f3f4f6', color: '#374151', padding: '2px 10px', borderRadius: 6, fontSize: 12 }}>
-                    {item}
-                  </span>
-                ))}
-              </div>
 
               <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                 <Button
                   type="primary"
+                  icon={<DollarOutlined />}
                   style={{ background: '#ff6b00', borderColor: '#ff6b00', borderRadius: 8, fontWeight: 600 }}
                   onClick={() => setShowPayment(true)}
                 >
-                  💳 Thanh toán
+                  Thanh toán
                 </Button>
                 <Button
+                  icon={<ToolOutlined />}
                   style={{ borderRadius: 8, fontWeight: 500 }}
                   onClick={() => setShowMR(true)}
                 >
-                  🛠️ Báo sự cố
+                  Báo sự cố
                 </Button>
                 <Button
+                  icon={<FileTextOutlined />}
                   style={{ borderRadius: 8, fontWeight: 500 }}
-                  onClick={() => handleOpenContractModal(activeContract)}
+                  onClick={() => handleOpenContractModal(activeRoomDetail)}
                 >
-                  📜 Xem hợp đồng
+                  Xem hợp đồng
                 </Button>
               </div>
             </Col>
@@ -915,70 +908,68 @@ const TenantRoomManagement = ({ requests, setRequests, rooms, user, onGoToSearch
       ) : (
         <div style={{ background: '#fff', borderRadius: 16, border: '1px dashed #d9d9d9', padding: 30, marginBottom: 24, textAlign: 'center' }}>
           <Empty description="Bạn chưa có phòng trọ nào đang thuê active." />
-          <Button type="primary" style={{ background: '#ff6b00', borderColor: '#ff6b00', marginTop: 12 }} onClick={onGoToSearch}>
-            🔍 Tìm phòng trọ ngay
+          <Button type="primary" icon={<SearchOutlined />} style={{ background: '#ff6b00', borderColor: '#ff6b00', marginTop: 12 }} onClick={onGoToSearch}>
+            Tìm phòng trọ ngay
           </Button>
         </div>
       )}
 
-      {/* 🛠️ KHỐI 2: YÊU CẦU SỬA CHỮA (MAINTENANCE) */}
+      {/* 🛠️ KHỐI 2: YÊU CẦU SỬA CHỮA */}
       <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #e5e7eb', padding: 20, marginBottom: 24, boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
           <span style={{ fontSize: 13, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-            🛠️ Yêu cầu sửa chữa ({mrList.length})
+            <ToolOutlined style={{ marginRight: 6 }} /> Yêu cầu sửa chữa ({mrList.length})
           </span>
           <Button
             type="primary"
             size="small"
-            disabled={!activeContract}
-            style={{ background: activeContract ? '#ff6b00' : '#d9d9d9', borderColor: activeContract ? '#ff6b00' : '#d9d9d9', borderRadius: 6, fontSize: 12 }}
+            icon={<PlusOutlined />}
+            disabled={!activeRoomDetail}
+            style={{ background: activeRoomDetail ? '#ff6b00' : '#d9d9d9', borderColor: activeRoomDetail ? '#ff6b00' : '#d9d9d9', borderRadius: 6, fontSize: 12 }}
             onClick={() => setShowMR(true)}
           >
-            + Báo sự cố mới
+            Báo sự cố mới
           </Button>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {mrList.map((mr) => {
-            const cfg = mrStatusCfg[mr.status] || { label: mr.status, color: 'default' };
-            return (
-              <div
-                key={mr.id}
-                style={{
-                  display: 'flex',
-                  justify: 'space-between',
-                  alignItems: 'center',
-                  padding: '12px 16px',
-                  background: '#f9fafb',
-                  borderRadius: 10,
-                  border: '1px solid #f3f4f6'
-                }}
-              >
-                <div>
-                  <div style={{ fontWeight: 600, fontSize: 14, color: '#111827' }}>
-                    {mr.title}
+          {mrList.length === 0 ? (
+            <div style={{ textAlign: 'center', color: '#9ca3af', padding: '10px 0', fontSize: 13 }}>
+              Chưa có yêu cầu sửa chữa nào.
+            </div>
+          ) : (
+            mrList.map((mr) => {
+              const cfg = mrStatusCfg[mr.status] || { label: mr.status, color: 'default' };
+              return (
+                <div
+                  key={mr.id || mr._id}
+                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: '#f9fafb', borderRadius: 10, border: '1px solid #f3f4f6' }}
+                >
+                  <div>
+                    <div style={{ fontWeight: 600, fontSize: 14, color: '#111827' }}>
+                      {mr.title}
+                    </div>
+                    <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>
+                      Danh mục: {mr.category} · Ngày gửi: {mr.date || 'Gần đây'}
+                    </div>
                   </div>
-                  <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>
-                    Danh mục: {mr.category} · Ngày gửi: {mr.date}
-                    {mr.resolvedDate && ` · Hoàn thành: ${mr.resolvedDate}`}
-                  </div>
+                  <Tag color={cfg.color}>{cfg.label}</Tag>
                 </div>
-                <Tag color={cfg.color}>{cfg.label}</Tag>
-              </div>
-            );
-          })}
+              );
+            })
+          )}
         </div>
       </div>
 
       {/* 📋 KHỐI 3: LỊCH SỬ GỬI YÊU CẦU THUÊ PHÒNG */}
       <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #e5e7eb', padding: 20, boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
         <div style={{ fontSize: 13, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', marginBottom: 16, letterSpacing: '0.5px' }}>
-          📋 Lịch sử gửi yêu cầu thuê phòng
+          <FileTextOutlined style={{ marginRight: 6 }} /> Lịch sử gửi yêu cầu thuê phòng
         </div>
 
         <Table
           dataSource={requests}
-          rowKey="id"
+          rowKey={(record) => record.id || record._id || Math.random()}
           pagination={false}
           scroll={{ x: 'max-content' }}
           columns={[
@@ -998,17 +989,19 @@ const TenantRoomManagement = ({ requests, setRequests, rooms, user, onGoToSearch
               title: 'Tên phòng trọ',
               dataIndex: 'roomTitle',
               key: 'roomTitle',
+              render: (title, record) => title || record.room?.title || 'Phòng trọ',
             },
             {
               title: 'Ngày bắt đầu',
               dataIndex: 'startDate',
               key: 'startDate',
+              render: (d) => d || 'Theo thỏa thuận',
             },
             {
               title: 'Tiền thuê',
               dataIndex: 'price',
               key: 'price',
-              render: (val) => <strong style={{ color: '#ff6b00' }}>{Number(val).toLocaleString()}đ</strong>,
+              render: (val) => <strong style={{ color: '#ff6b00' }}>{Number(val || 0).toLocaleString()}đ</strong>,
             },
             {
               title: 'Trạng thái',
@@ -1017,17 +1010,7 @@ const TenantRoomManagement = ({ requests, setRequests, rooms, user, onGoToSearch
               render: (st) => {
                 const cfg = statusCfg[st] || statusCfg.pending;
                 return (
-                  <span
-                    style={{
-                      background: cfg.bg,
-                      color: cfg.text,
-                      border: `1px solid ${cfg.border}`,
-                      padding: '2px 8px',
-                      borderRadius: 10,
-                      fontSize: 12,
-                      fontWeight: 600,
-                    }}
-                  >
+                  <span style={{ background: cfg.bg, color: cfg.text, border: `1px solid ${cfg.border}`, padding: '2px 8px', borderRadius: 10, fontSize: 12, fontWeight: 600 }}>
                     {cfg.label}
                   </span>
                 );
@@ -1037,6 +1020,7 @@ const TenantRoomManagement = ({ requests, setRequests, rooms, user, onGoToSearch
               title: 'Thao tác',
               key: 'action',
               render: (_, record) => {
+                const targetId = record.id || record._id;
                 const st = (record.status || '').toLowerCase();
                 if (st === 'approved' || st === 'active') {
                   return (
@@ -1047,7 +1031,7 @@ const TenantRoomManagement = ({ requests, setRequests, rooms, user, onGoToSearch
                 }
                 if (st === 'rejected' || st === 'cancelled') {
                   return (
-                    <Popconfirm title="Xóa lịch sử yêu cầu này?" onConfirm={() => handleDeleteRequest(record.id)} okText="Xóa" cancelText="Hủy">
+                    <Popconfirm title="Xóa lịch sử yêu cầu này?" onConfirm={() => handleDeleteRequest(targetId)} okText="Xóa" cancelText="Hủy">
                       <Button type="link" size="small" danger style={{ padding: 0 }}>
                         Xóa
                       </Button>
@@ -1056,7 +1040,7 @@ const TenantRoomManagement = ({ requests, setRequests, rooms, user, onGoToSearch
                 }
                 if (st === 'pending') {
                   return (
-                    <Popconfirm title="Hủy yêu cầu thuê này?" onConfirm={() => handleCancelRequest(record.id)} okText="Hủy YC" cancelText="Đóng">
+                    <Popconfirm title="Hủy yêu cầu thuê này?" onConfirm={() => handleCancelRequest(targetId)} okText="Hủy YC" cancelText="Đóng">
                       <Button type="link" size="small" style={{ color: '#faad14', padding: 0 }}>
                         Hủy
                       </Button>
@@ -1072,12 +1056,13 @@ const TenantRoomManagement = ({ requests, setRequests, rooms, user, onGoToSearch
 
       {/* MODAL BÁO SỰ CỐ */}
       <Modal
-        title="🛠️ Báo cáo sự cố / Sửa chữa"
+        title={<span><ToolOutlined style={{ marginRight: 6, color: '#ff6b00' }} /> Báo cáo sự cố / Sửa chữa</span>}
         open={showMR}
         onCancel={() => setShowMR(false)}
         onOk={handleAddMR}
         okText="Gửi yêu cầu"
         cancelText="Hủy"
+        confirmLoading={submittingMR}
         okButtonProps={{ style: { background: '#ff6b00', borderColor: '#ff6b00' } }}
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginTop: 12 }}>
@@ -1118,7 +1103,7 @@ const TenantRoomManagement = ({ requests, setRequests, rooms, user, onGoToSearch
 
       {/* MODAL THANH TOÁN */}
       <Modal
-        title="💳 Thanh toán hóa đơn tháng hiện tại"
+        title={<span><DollarOutlined style={{ marginRight: 6, color: '#ff6b00' }} /> Thanh toán hóa đơn tháng hiện tại</span>}
         open={showPayment}
         onCancel={() => setShowPayment(false)}
         footer={null}
@@ -1129,29 +1114,21 @@ const TenantRoomManagement = ({ requests, setRequests, rooms, user, onGoToSearch
             <div style={{ background: '#f9fafb', padding: 16, borderRadius: 12, marginBottom: 16, border: '1px solid #f3f4f6' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 8 }}>
                 <span>Tiền thuê phòng (#{activeRoomDetail.id}):</span>
-                <strong>{Number(activeRoomDetail.price || 4500000).toLocaleString()}đ</strong>
+                <strong>{Number(activeRoomDetail.price || 0).toLocaleString()}đ</strong>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 8 }}>
-                <span>Tiền điện (85 kWh x 3.500đ):</span>
-                <strong>297.500đ</strong>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 8 }}>
-                <span>Tiền nước:</span>
-                <strong>100.000đ</strong>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 8 }}>
-                <span>Internet:</span>
-                <strong>100.000đ</strong>
+                <span>Tiền điện & nước:</span>
+                <strong>397.500đ</strong>
               </div>
               <hr style={{ margin: '10px 0', borderColor: '#e5e7eb' }} />
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 15 }}>
                 <strong style={{ color: '#111827' }}>Tổng thanh toán:</strong>
-                <strong style={{ color: '#ff6b00', fontSize: 18 }}>{Number((activeRoomDetail.price || 4500000) + 497500).toLocaleString()}đ</strong>
+                <strong style={{ color: '#ff6b00', fontSize: 18 }}>{Number((activeRoomDetail.price || 0) + 397500).toLocaleString()}đ</strong>
               </div>
             </div>
 
             <div style={{ textAlign: 'center', margin: '20px 0' }}>
-              <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 8 }}>Quét mã QR để chuyển khoản (VietQR)</div>
+              <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 8 }}>Quét mã QR VietQR</div>
               <img
                 src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=PAYMENT_${activeRoomDetail.id}`}
                 alt="QR Payment"
@@ -1166,7 +1143,7 @@ const TenantRoomManagement = ({ requests, setRequests, rooms, user, onGoToSearch
               style={{ background: '#ff6b00', borderColor: '#ff6b00', borderRadius: 8, fontWeight: 600 }}
               onClick={() => {
                 setShowPayment(false);
-                message.success('Đã gửi xác nhận thanh toán! Quản lý sẽ xác minh trong 15 phút.');
+                message.success('Đã gửi xác nhận thanh toán!');
               }}
             >
               Xác nhận đã chuyển khoản
@@ -1175,49 +1152,24 @@ const TenantRoomManagement = ({ requests, setRequests, rooms, user, onGoToSearch
         )}
       </Modal>
 
-      {/* MODAL XEM HỢP ĐỒNG KHÁCH THUÊ */}
+      {/* MODAL HỢP ĐỒNG */}
       <Modal
-        title={`📜 Hợp đồng thuê nhà — Phòng ${selectedContractReq?.roomId || activeRoomDetail?.id || ''}`}
+        title={<span><FileTextOutlined style={{ marginRight: 6 }} /> Hợp đồng thuê nhà — Phòng {selectedContractReq?.roomId || selectedContractReq?.id || activeRoomDetail?.id || ''}</span>}
         open={showContract}
         onCancel={() => setShowContract(false)}
-        footer={[
-          <Button key="close" onClick={() => setShowContract(false)}>Đóng</Button>,
-        ]}
+        footer={[<Button key="close" onClick={() => setShowContract(false)}>Đóng</Button>]}
         width={560}
       >
         <div style={{ padding: '8px 0', fontSize: 13, lineHeight: 1.7, color: '#374151' }}>
-          <h6 style={{ textAlign: 'center', fontWeight: 700, textTransform: 'uppercase', marginBottom: 16 }}>
-            CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM<br />
-            <small style={{ fontWeight: 400 }}>Độc lập – Tự do – Hạnh phúc</small>
-          </h6>
-
-          <div style={{ background: '#f9fafb', padding: 12, borderRadius: 8, marginBottom: 12 }}>
-            <strong>BÊN CHO THUÊ (BÊN A):</strong> {activeRoomDetail?.landlordName || 'Nguyễn Minh Tuấn'} — SĐT: {activeRoomDetail?.landlordPhone || '0901234567'}<br />
-            <strong>BÊN THUÊ (BÊN B):</strong> {selectedContractReq?.tenantName || user?.fullName || 'Trần Thị Hương'} — SĐT: {selectedContractReq?.tenantPhone || '0987654321'}
-          </div>
-
-          <p><strong>1. Phòng thuê:</strong> #{selectedContractReq?.roomId || activeRoomDetail?.id} — {selectedContractReq?.roomTitle || activeRoomDetail?.title}</p>
-          <p><strong>2. Thời hạn hợp đồng:</strong> (Từ {selectedContractReq?.startDate || '01/01/2026'} đến {selectedContractReq?.endDate || '01/01/2027'})</p>
-          <p><strong>3. Giá thuê:</strong> {Number(selectedContractReq?.price || activeRoomDetail?.price || 4500000).toLocaleString()} VNĐ / tháng. Thanh toán từ ngày 01 – 05 hàng tháng.</p>
-          <p><strong>4. Tiền cọc:</strong> {Number(selectedContractReq?.price || activeRoomDetail?.price || 4500000).toLocaleString()} VNĐ (1 tháng tiền nhà)</p>
-          <p><strong>5. Trách nhiệm hai bên:</strong> Bảo quản tài sản, thanh toán đúng hạn, tuân thủ nội quy PCCC và an ninh trật tự.</p>
-
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 24, textAlign: 'center' }}>
-            <div>
-              <strong>BÊN A (Chủ nhà)</strong><br />
-              <span style={{ color: '#52c41a', fontSize: 12 }}>✓ Đã ký điện tử</span>
-            </div>
-            <div>
-              <strong>BÊN B (Người thuê)</strong><br />
-              <span style={{ color: '#52c41a', fontSize: 12 }}>✓ Đã ký điện tử</span>
-            </div>
-          </div>
+          <p><strong>1. Phòng thuê:</strong> #{selectedContractReq?.roomId || selectedContractReq?.id || activeRoomDetail?.id} — {selectedContractReq?.roomTitle || selectedContractReq?.title || activeRoomDetail?.title}</p>
+          <p><strong>2. Giá thuê:</strong> {Number(selectedContractReq?.price || activeRoomDetail?.price || 0).toLocaleString()} VNĐ/tháng.</p>
+          <p><strong>3. Bên thuê:</strong> {user?.fullName || user?.username || 'Khách thuê'}</p>
+          <p><strong>4. Thời hạn thuê:</strong> {selectedContractReq?.startDate || 'Từ ngày thỏa thuận'} - {selectedContractReq?.endDate || 'Đến khi thanh lý hợp đồng'}</p>
         </div>
       </Modal>
     </div>
   );
 };
-
 // ==========================================
 // COMPONENT QUẢN LÝ PHÒNG (Dành cho Chủ nhà)
 // ==========================================
@@ -1280,7 +1232,7 @@ const MyRoomsView = ({ rooms, setRooms }) => {
   const handleDeleteRoom = async (roomId) => {
     try {
       await roomApi.deleteRoom(roomId);
-    } catch (e) {}
+    } catch (e) { }
     setRooms(rooms.filter((r) => r.id !== roomId));
     message.success(`Đã xóa bài đăng phòng #${roomId}!`);
   };
@@ -1313,14 +1265,16 @@ const MyRoomsView = ({ rooms, setRooms }) => {
     { title: 'Diện tích', dataIndex: 'area', key: 'area', render: (area) => `${area} m²` },
     { title: 'Trạng thái', dataIndex: 'status', key: 'status', render: (status, record) => status === 'AVAILABLE' || status === 'Available' ? <Tag icon={<CheckCircleOutlined />} color="success">Sẵn sàng</Tag> : status === 'RENTED' || status === 'Rented' ? <Tag color="processing">Đã cho thuê ({record.tenantName || 'Khách'})</Tag> : <Tag icon={<ToolOutlined />} color="warning">Bảo trì</Tag> },
     { title: 'Ảnh bài đăng', key: 'images', render: (_, record) => <Button type="dashed" size="small" icon={<PictureOutlined />} onClick={() => handleOpenImageModal(record)}>Quản lý ({record.images?.length || 0})</Button> },
-    { title: 'Hành động', key: 'action', render: (_, record) => (
-      <Space>
-        <Button type="text" icon={<EditOutlined style={{ color: '#1677ff' }} />} onClick={() => handleOpenEditModal(record)}>Sửa</Button>
-        <Popconfirm title="Xóa phòng này?" onConfirm={() => handleDeleteRoom(record.id)} okText="Xóa" cancelText="Hủy" okButtonProps={{ danger: true }}>
-          <Button type="text" danger icon={<DeleteOutlined />}>Xóa</Button>
-        </Popconfirm>
-      </Space>
-    )}
+    {
+      title: 'Hành động', key: 'action', render: (_, record) => (
+        <Space>
+          <Button type="text" icon={<EditOutlined style={{ color: '#1677ff' }} />} onClick={() => handleOpenEditModal(record)}>Sửa</Button>
+          <Popconfirm title="Xóa phòng này?" onConfirm={() => handleDeleteRoom(record.id)} okText="Xóa" cancelText="Hủy" okButtonProps={{ danger: true }}>
+            <Button type="text" danger icon={<DeleteOutlined />}>Xóa</Button>
+          </Popconfirm>
+        </Space>
+      )
+    }
   ];
 
   return (
@@ -1380,14 +1334,16 @@ const ApproveRequestsView = ({ requests, onApprove, onReject }) => {
     { title: 'Thời hạn', key: 'duration', render: (_, record) => `${record.startDate} ➔ ${record.endDate}` },
     { title: 'Giá thuê', dataIndex: 'price', key: 'price', render: (price) => <strong style={{ color: '#ff4d4f' }}>{Number(price).toLocaleString()} đ/tháng</strong> },
     { title: 'Trạng thái', dataIndex: 'status', key: 'status', render: (status) => status === 'PENDING' ? <Badge status="processing" text={<Tag color="gold">Chờ phê duyệt</Tag>} /> : status === 'APPROVED' ? <Tag color="green">Đã phê duyệt</Tag> : <Tag color="red">Đã từ chối</Tag> },
-    { title: 'Hành động', key: 'action', render: (_, record) => record.status === 'PENDING' ? (
-      <Space>
-        <Button type="primary" size="small" icon={<CheckOutlined />} onClick={() => onApprove(record.id, record.roomId, record.tenantName)}>Duyệt</Button>
-        <Popconfirm title="Từ chối yêu cầu này?" onConfirm={() => onReject(record.id, record.roomId, record.tenantName)} okText="Từ chối" cancelText="Hủy" okButtonProps={{ danger: true }}>
-          <Button danger size="small" icon={<CloseOutlined />}>Từ chối</Button>
-        </Popconfirm>
-      </Space>
-    ) : <span style={{ color: '#8c8c8c', fontSize: '12px' }}>Đã xử lý</span> }
+    {
+      title: 'Hành động', key: 'action', render: (_, record) => record.status === 'PENDING' ? (
+        <Space>
+          <Button type="primary" size="small" icon={<CheckOutlined />} onClick={() => onApprove(record.id, record.roomId, record.tenantName)}>Duyệt</Button>
+          <Popconfirm title="Từ chối yêu cầu này?" onConfirm={() => onReject(record.id, record.roomId, record.tenantName)} okText="Từ chối" cancelText="Hủy" okButtonProps={{ danger: true }}>
+            <Button danger size="small" icon={<CloseOutlined />}>Từ chối</Button>
+          </Popconfirm>
+        </Space>
+      ) : <span style={{ color: '#8c8c8c', fontSize: '12px' }}>Đã xử lý</span>
+    }
   ];
 
   return (
@@ -1406,9 +1362,23 @@ const Home = ({ onLogout }) => {
   const [collapsed, setCollapsed] = useState(false);
 
   const [rooms, setRooms] = useState(INITIAL_ROOMS);
-  const [requests, setRequests] = useState(INITIAL_REQUESTS);
+  const [requests, setRequests] = useState(() => {
+  try {
+    const saved = localStorage.getItem('rental_requests');
+    return saved ? JSON.parse(saved) : [];
+  } catch (e) {
+    return [];
+  }
+});
   const [mrList, setMrList] = useState(INITIAL_MAINTENANCE_REPORTS);
-  const [favorites, setFavorites] = useState(['P101', 'P202', 'P301']);
+ const [favorites, setFavorites] = useState(() => {
+  try {
+    const savedFavs = localStorage.getItem('favorite_rooms');
+    return savedFavs ? JSON.parse(savedFavs) : [];
+  } catch (e) {
+    return [];
+  }
+});
 
   // STATE DÀNH RIÊNG CHO TÍNH NĂNG THÔNG BÁO
   const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
@@ -1440,44 +1410,57 @@ const Home = ({ onLogout }) => {
   const [passwordForm] = AntForm.useForm();
   const [rentalForm] = AntForm.useForm();
 
-  
 
-  // Load danh sách phòng từ API khi khởi chạy
-  useEffect(() => {
-    const fetchAvailableRooms = async () => {
-      try {
-        const res = await roomApi.getAllAvailable();
-        if (res.data && Array.isArray(res.data)) {
-          setRooms(res.data);
-        }
-      } catch (err) {
-        console.log('Chưa kết nối API, dùng dữ liệu khởi tạo');
+
+  // 🟢 1. TẢI USER & THÔNG BÁO TỪ LOCALSTORAGE KHI COMPONENT MOUNT
+useEffect(() => {
+  // 1. Đồng bộ thông tin User
+  const savedProfile = localStorage.getItem('saved_user_profile');
+  const localUser = localStorage.getItem('user');
+  let userData = null;
+
+  if (savedProfile) try { userData = JSON.parse(savedProfile); } catch (e) { }
+  else if (localUser) try { userData = JSON.parse(localUser); } catch (e) { }
+
+  if (userData) {
+    if (!userData.role) userData.role = 'TENANT';
+    setUser(userData);
+  } else {
+    // Không dùng tên mặc định giả lập nữa nếu muốn sạch hoàn toàn
+    setUser(null); 
+  }
+
+  // 2. BỔ SUNG: Đồng bộ danh sách Yêu cầu thuê / Phòng đang thuê từ LocalStorage (Tránh mất khi F5)
+  const savedRequests = localStorage.getItem('rental_requests');
+  if (savedRequests) {
+    try {
+      const parsedReqs = JSON.parse(savedRequests);
+      if (Array.isArray(parsedReqs)) {
+        setRequests(parsedReqs);
       }
-    };
-    fetchAvailableRooms();
-  }, []);
-
-  useEffect(() => {
-    const savedProfile = localStorage.getItem('saved_user_profile');
-    const localUser = localStorage.getItem('user');
-    let userData = null;
-
-    if (savedProfile) try { userData = JSON.parse(savedProfile); } catch (e) {}
-    else if (localUser) try { userData = JSON.parse(localUser); } catch (e) {}
-
-    if (userData) {
-      if (!userData.role) userData.role = 'TENANT';
-      setUser(userData);
-    } else {
-      setUser({ username: 'Trần Thị Hương', fullName: 'Trần Thị Hương', role: 'TENANT' });
+    } catch (e) {
+      console.error('Lỗi đọc rental_requests từ localStorage:', e);
     }
+  }
 
-    const savedFavs = localStorage.getItem('favorite_rooms');
-    if (savedFavs) try { setFavorites(JSON.parse(savedFavs)); } catch (e) {}
-
-    const savedNotifs = localStorage.getItem('notifications');
-    if (savedNotifs) try { setNotifications(JSON.parse(savedNotifs)); } catch (e) {}
-  }, []);
+  // 3. Đồng bộ Danh sách thông báo
+  const savedNotifs = localStorage.getItem('notifications');
+  if (savedNotifs) try { setNotifications(JSON.parse(savedNotifs)); } catch (e) { }
+}, []);
+// 🟢 2. TẢI DANH SÁCH PHÒNG TỪ API
+useEffect(() => {
+  const fetchAvailableRooms = async () => {
+    try {
+      const res = await roomApi.getAllAvailable();
+      if (res.data && Array.isArray(res.data)) {
+        setRooms(res.data);
+      }
+    } catch (err) {
+      console.log('Chưa kết nối API, dùng dữ liệu khởi tạo');
+    }
+  };
+  fetchAvailableRooms();
+}, []);
 
   const saveNotificationsToStorage = (updatedNotifs) => {
     setNotifications(updatedNotifs);
@@ -1533,6 +1516,8 @@ const Home = ({ onLogout }) => {
       return req;
     });
     setRequests(updatedRequests);
+    // 💾 Lưu lại danh sách yêu cầu mới
+    localStorage.setItem('rental_requests', JSON.stringify(updatedRequests));
 
     // 2. Cập nhật phòng tương ứng sang RENTED
     const updatedRooms = rooms.map(room => {
@@ -1542,6 +1527,8 @@ const Home = ({ onLogout }) => {
       return room;
     });
     setRooms(updatedRooms);
+    // 💾 Lưu luôn trạng thái phòng đã thuê để không bị reset khi F5
+    localStorage.setItem('saved_rooms_list', JSON.stringify(updatedRooms));
 
     addNotification(
       'Yêu cầu thuê đã được duyệt',
@@ -1554,7 +1541,7 @@ const Home = ({ onLogout }) => {
 
   const handleRejectRequest = (requestId, roomId, tenantName) => {
     setRequests(requests.map(req => req.id === requestId ? { ...req, status: 'REJECTED' } : req));
-    
+
     addNotification(
       'Từ chối yêu cầu thuê',
       `Yêu cầu thuê phòng #${roomId} của ${tenantName} đã bị từ chối.`,
@@ -1643,7 +1630,11 @@ const Home = ({ onLogout }) => {
       price: selectedRoomForRent.price,
       status: 'PENDING'
     };
-    setRequests([newReq, ...requests]);
+
+    // Tạo danh sách mới và lưu ngay vào LocalStorage
+    const updatedRequests = [newReq, ...requests];
+    setRequests(updatedRequests);
+    localStorage.setItem('rental_requests', JSON.stringify(updatedRequests));
 
     addNotification(
       'Gửi yêu cầu thuê phòng',
@@ -1671,9 +1662,10 @@ const Home = ({ onLogout }) => {
     });
   }, [rooms, searchKeyword, selectedLocation, selectedRoomType, maxPrice, hasAc, hasWm]);
 
-  const favoriteRoomsList = useMemo(() => {
-    return rooms.filter(room => favorites.includes(room.id));
-  }, [rooms, favorites]);
+ const favoriteRoomsList = useMemo(() => {
+  if (!Array.isArray(favorites)) return [];
+  return rooms.filter(room => favorites.map(id => String(id)).includes(String(room.id)));
+}, [rooms, favorites]);
 
   const approvedRequests = useMemo(() => {
     return requests.filter(req => req.status === 'APPROVED' || req.status === 'active');
@@ -1744,8 +1736,8 @@ const Home = ({ onLogout }) => {
             <List.Item.Meta
               avatar={
                 item.type === 'SUCCESS' ? <CheckCircleOutlined style={{ color: '#52c41a', fontSize: 18 }} /> :
-                item.type === 'WARNING' ? <InfoCircleOutlined style={{ color: '#ff4d4f', fontSize: 18 }} /> :
-                <BellOutlined style={{ color: '#1677ff', fontSize: 18 }} />
+                  item.type === 'WARNING' ? <InfoCircleOutlined style={{ color: '#ff4d4f', fontSize: 18 }} /> :
+                    <BellOutlined style={{ color: '#1677ff', fontSize: 18 }} />
               }
               title={<span style={{ fontSize: 13, fontWeight: item.isRead ? 'normal' : 'bold' }}>{item.title}</span>}
               description={
@@ -1775,7 +1767,7 @@ const Home = ({ onLogout }) => {
           {!collapsed && (
             <div>
               <h5 style={{ color: '#ff6b00', margin: 0, fontWeight: 800, fontSize: '15px', letterSpacing: '0.5px' }}>
-                {isLandlord ? 'LANDLORD PORTAL' : 'NGƯỜI THUÊ'}
+                {isLandlord ? 'QUẢN LÝ PHÒNG' : 'NGƯỜI THUÊ'}
               </h5>
               <div style={{ color: '#8c8c8c', fontSize: '11px' }}>Tenant Portal</div>
             </div>
@@ -1819,7 +1811,7 @@ const Home = ({ onLogout }) => {
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <span style={{ color: '#8c8c8c', fontSize: '13px' }}>👤 Chào, {displayName}</span>
             <span style={{ color: '#1890ff', fontWeight: 600, fontSize: '13px' }}>
-              {activeNav === 'analytics' ? 'Báo cáo & Thống kê' : activeNav === 'maintenance' ? 'Quản lý Bảo trì' : 'Trang chủ'}
+
             </span>
           </div>
 
@@ -2015,7 +2007,7 @@ const Home = ({ onLogout }) => {
                     style={{ borderRadius: 20, background: '#fff0f2', borderColor: '#ffd6e0', color: '#ff4d4f', fontWeight: 600, fontSize: 13 }}
                     onClick={() => setActiveNav('favorites')}
                   >
-                    💖 Yêu thích ({favorites.length})
+                    💖 Yêu thích ({favoriteRoomsList.length})
                   </Button>
                   <Button
                     style={{ borderRadius: 20, background: '#f6ffed', borderColor: '#b7eb8f', color: '#52c41a', fontWeight: 600, fontSize: 13 }}
@@ -2126,7 +2118,7 @@ const Home = ({ onLogout }) => {
                           {/* KHU VỰC ẢNH & LOẠI PHÒNG & THẢ TIM */}
                           <div style={{ position: 'relative', height: 190, overflow: 'hidden' }}>
                             <img src={mainImage} alt={room.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                            
+
                             {/* HUY HIỆU LOẠI PHÒNG */}
                             <span style={{
                               position: 'absolute',
@@ -2231,28 +2223,284 @@ const Home = ({ onLogout }) => {
 
           {/* HỢP ĐỒNG CỦA KHÁCH THUÊ */}
           {!isLandlord && activeNav === 'contracts' && (
-            <AntCard title="📜 Hợp đồng thuê phòng của tôi" className="shadow-sm border-0" style={{ borderRadius: 16 }}>
-              {approvedRequests.length === 0 ? (
-                <Empty description="Chưa có hợp đồng nào được khởi tạo." />
-              ) : (
-                <Table
-                  dataSource={approvedRequests}
-                  columns={[
-                    { title: 'Mã hợp đồng', dataIndex: 'id', render: (id) => <strong style={{ color: '#1677ff' }}>HD-{id}</strong> },
-                    { title: 'Tên phòng', dataIndex: 'roomTitle' },
-                    { title: 'Mã phòng', dataIndex: 'roomId', render: (id) => `#${id}` },
-                    { title: 'Ngày bắt đầu', dataIndex: 'startDate' },
-                    { title: 'Ngày kết thúc', dataIndex: 'endDate' },
-                    { title: 'Giá thuê', dataIndex: 'price', render: (p) => <strong style={{ color: '#ff4d4f' }}>{Number(p).toLocaleString()} đ</strong> },
-                    { title: 'Trạng thái', key: 'status', render: () => <Tag color="green">Còn hiệu lực</Tag> }
-                  ]}
-                  rowKey="id"
-                  scroll={{ x: 'max-content' }}
-                />
-              )}
-            </AntCard>
-          )}
+            <div style={{ color: '#000000', colorScheme: 'light' }}>
+              {/* Tiêu đề trang */}
+              <div style={{ marginBottom: 20 }}>
+                <h2 style={{ fontSize: 20, fontWeight: 700, color: '#111827', margin: 0 }}>Hợp đồng thuê phòng</h2>
+                <p style={{ fontSize: 13, color: '#4b5563', margin: '4px 0 0 0' }}>Thông tin hợp đồng và lịch sử thanh toán</p>
+              </div>
 
+              {approvedRequests.length === 0 ? (
+                <AntCard className="shadow-sm border-0" style={{ borderRadius: 16, background: '#ffffff' }}>
+                  <Empty description={<span style={{ color: '#374151' }}>Chưa có hợp đồng nào được khởi tạo.</span>} />
+                </AntCard>
+              ) : (
+                (() => {
+                  const contract = approvedRequests[0];
+                  const roomPrice = Number(contract.price || contract.monthlyRent || 0);
+                  const roomName = contract.roomName || contract.code || contract.roomId || 'P101';
+
+                  // Khởi tạo danh sách hóa đơn mặc định nếu chưa có
+                  if (!contract.bills || contract.bills.length === 0) {
+                    contract.bills = [
+                      {
+                        id: 'default-current-bill',
+                        month: `Tháng ${new Date().getMonth() + 1}/${new Date().getFullYear()}`,
+                        status: 'pending',
+                        dueDate: `05/${(new Date().getMonth() + 1).toString().padStart(2, '0')}/${new Date().getFullYear()}`,
+                        rent: roomPrice,
+                        electric: Number(contract.electricFee || 250000),
+                        water: Number(contract.waterFee || 75000),
+                        internet: Number(contract.internetFee || 100000),
+                        other: 0,
+                      }
+                    ];
+                  }
+
+                  const displayBills = contract.bills;
+
+                  // Tính toán ngày và tiến độ hợp đồng
+                  const today = new Date();
+                  const start = contract.startDate ? new Date(contract.startDate) : new Date();
+                  const end = contract.endDate ? new Date(contract.endDate) : new Date();
+
+                  const startDateStr = contract.startDate ? new Date(contract.startDate).toLocaleDateString('vi-VN') : 'N/A';
+                  const endDateStr = contract.endDate ? new Date(contract.endDate).toLocaleDateString('vi-VN') : 'N/A';
+
+                  const totalDays = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
+                  const daysLeft = Math.max(0, Math.ceil((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)));
+                  const progress = Math.min(100, Math.max(0, Math.round(((totalDays - daysLeft) / totalDays) * 100)));
+
+                  // Xử lý khi nhấn "Thanh toán"
+                  const handlePayBill = (bill, billIndex) => {
+                    const rentVal = Number(bill.rent ?? roomPrice);
+                    const elecVal = Number(bill.electric ?? 0);
+                    const waterVal = Number(bill.water ?? 0);
+                    const netVal = Number(bill.internet ?? 0);
+                    const otherVal = Number(bill.other ?? 0);
+                    const totalAmount = rentVal + elecVal + waterVal + netVal + otherVal;
+
+                    // Chuẩn hóa nội dung CK
+                    const transferContent = `TT ${roomName} ${bill.month}`;
+
+                    Modal.confirm({
+                      title: <div style={{ fontSize: 18, fontWeight: 700, color: '#111827' }}>Thanh toán hóa đơn - {bill.month}</div>,
+                      icon: null,
+                      width: 440,
+                      centered: true,
+                      okText: 'Tôi đã chuyển khoản',
+                      cancelText: 'Đóng',
+                      okButtonProps: { style: { background: '#f97316', borderColor: '#f97316', borderRadius: 8, fontWeight: 600, color: '#ffffff' } },
+                      cancelButtonProps: { style: { borderRadius: 8 } },
+                      onOk() {
+                        // 1. Cập nhật trạng thái trực tiếp vào mảng
+                        contract.bills = contract.bills.map((b, idx) => {
+                          if ((b.id && b.id === bill.id) || idx === billIndex) {
+                            return { ...b, status: 'paid', paidDate: new Date().toLocaleDateString('vi-VN') };
+                          }
+                          return b;
+                        });
+
+                        // 2. Ép React re-render lại UI ngay lập tức
+                        if (typeof setActiveNav === 'function') {
+                          setActiveNav('');
+                          setTimeout(() => setActiveNav('contracts'), 0);
+                        }
+
+                        if (typeof message !== 'undefined') {
+                          message.success('Thanh toán thành công!');
+                        }
+                      },
+                      content: (
+                        <div style={{ paddingTop: 10, textAlign: 'center', color: '#111827' }}>
+                          <p style={{ color: '#4b5563', fontSize: 13, marginBottom: 16 }}>
+                            Quét mã QR dưới đây để chuyển khoản thanh toán hóa đơn.
+                          </p>
+                          <div style={{ background: '#f8fafc', padding: 16, borderRadius: 12, border: '1px solid #e2e8f0', marginBottom: 12 }}>
+                            <img
+                              src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(transferContent)}`}
+                              alt="QR Thanh toán"
+                              style={{ width: 160, height: 160, borderRadius: 8, display: 'block', margin: '0 auto 12px auto' }}
+                            />
+                            <div style={{ fontSize: 20, fontWeight: 800, color: '#ea580c' }}>
+                              {totalAmount.toLocaleString('vi-VN')}đ
+                            </div>
+                            <div style={{ fontSize: 13, color: '#0f172a', marginTop: 6, fontWeight: 600 }}>
+                              Nội dung CK: <strong style={{ color: '#2563eb' }}>{transferContent}</strong>
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    });
+                  };
+
+                  return (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 20, color: '#111827' }}>
+                      {/* CARD 1: THÔNG TIN HỢP ĐỒNG */}
+                      <div style={{ background: '#ffffff', borderRadius: 16, border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
+                        <div style={{ padding: '16px 24px', borderBottom: '1px solid #f3f4f6', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#ffffff' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <span style={{ fontWeight: 700, color: '#111827', fontSize: 15 }}>Hợp đồng đang hiệu lực</span>
+                            <span style={{ background: '#f6ffed', color: '#52c41a', border: '1px solid #b7eb8f', padding: '2px 10px', borderRadius: 12, fontSize: 12, fontWeight: 600 }}>
+                              ● Active
+                            </span>
+                          </div>
+                          <button
+                            style={{ background: 'none', border: 'none', color: '#ea580c', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
+                            onClick={() => typeof message !== 'undefined' && message.info('Đang tải file hợp đồng PDF...')}
+                          >
+                            Tải PDF
+                          </button>
+                        </div>
+
+                        <div style={{ padding: 24, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px 40px', background: '#ffffff' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                            <div>
+                              <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4 }}>Mã phòng</div>
+                              <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a' }}>{roomName}</div>
+                            </div>
+                            <div>
+                              <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4 }}>Địa chỉ</div>
+                              <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a' }}>{contract.address || contract.addressDetail || 'Chưa cập nhật địa chỉ'}</div>
+                            </div>
+                            <div>
+                              <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4 }}>Chủ nhà</div>
+                              <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a' }}>{contract.landlordName || 'Chưa có thông tin'}</div>
+                            </div>
+                            <div>
+                              <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4 }}>Điện thoại chủ nhà</div>
+                              <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a' }}>{contract.landlordPhone || 'Chưa có SĐT'}</div>
+                            </div>
+                          </div>
+
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                            <div>
+                              <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4 }}>Ngày bắt đầu</div>
+                              <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a' }}>{startDateStr}</div>
+                            </div>
+                            <div>
+                              <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4 }}>Ngày kết thúc</div>
+                              <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a' }}>{endDateStr}</div>
+                            </div>
+                            <div>
+                              <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4 }}>Tiền thuê/tháng</div>
+                              <div style={{ fontSize: 15, fontWeight: 800, color: '#0f172a' }}>{roomPrice.toLocaleString('vi-VN')}đ</div>
+                            </div>
+                            <div>
+                              <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4 }}>Tiền đặt cọc</div>
+                              <div style={{ fontSize: 15, fontWeight: 800, color: '#0f172a' }}>{Number(contract.deposit || roomPrice).toLocaleString('vi-VN')}đ</div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div style={{ padding: '0 24px 24px 24px', background: '#ffffff' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#4b5563', marginBottom: 8 }}>
+                            <span>Tiến độ hợp đồng</span>
+                            <span style={{ color: '#ea580c', fontWeight: 700 }}>Còn {daysLeft} ngày</span>
+                          </div>
+                          <div style={{ height: 8, background: '#e5e7eb', borderRadius: 4, overflow: 'hidden' }}>
+                            <div style={{ width: `${progress}%`, height: '100%', background: 'linear-gradient(to right, #f97316, #fb923c)', borderRadius: 4 }} />
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#6b7280', marginTop: 6 }}>
+                            <span>{startDateStr}</span>
+                            <span>{endDateStr}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* CARD 2: LỊCH SỬ HÓA ĐƠN */}
+                      <div style={{ background: '#ffffff', borderRadius: 16, border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
+                        <div style={{ padding: '16px 24px', borderBottom: '1px solid #f3f4f6', fontWeight: 700, color: '#111827', fontSize: 15, background: '#ffffff' }}>
+                          Lịch sử hóa đơn
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', background: '#ffffff' }}>
+                          {displayBills.map((bill, index) => {
+                            const rentVal = Number(bill.rent ?? roomPrice);
+                            const elecVal = Number(bill.electric ?? 0);
+                            const waterVal = Number(bill.water ?? 0);
+                            const netVal = Number(bill.internet ?? 0);
+                            const otherVal = Number(bill.other ?? 0);
+
+                            const total = rentVal + elecVal + waterVal + netVal + otherVal;
+                            const isPending = bill.status === 'pending' || bill.status === 'UNPAID';
+
+                            return (
+                              <div key={bill.id || index} style={{ padding: 20, borderBottom: index !== displayBills.length - 1 ? '1px solid #f3f4f6' : 'none', background: '#ffffff' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+                                  <div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                                      <span style={{ fontWeight: 800, fontSize: 15, color: '#0f172a' }}>{bill.month}</span>
+                                      <span style={{
+                                        background: isPending ? '#fff7ed' : '#f6ffed',
+                                        color: isPending ? '#c2410c' : '#52c41a',
+                                        border: isPending ? '1px solid #ffedd5' : '1px solid #b7eb8f',
+                                        padding: '2px 10px',
+                                        borderRadius: 10,
+                                        fontSize: 11,
+                                        fontWeight: 700
+                                      }}>
+                                        {isPending ? 'Chờ thanh toán' : 'Đã thanh toán'}
+                                      </span>
+                                    </div>
+                                    <div style={{ fontSize: 12, color: '#6b7280' }}>
+                                      Hạn: {bill.dueDate || '05/07/2026'}
+                                      {bill.paidDate ? ` · Đã trả: ${bill.paidDate}` : ''}
+                                    </div>
+                                  </div>
+
+                                  <div style={{ textAlign: 'right' }}>
+                                    <div style={{ fontSize: 16, fontWeight: 800, color: '#0f172a', marginBottom: 6 }}>
+                                      {total.toLocaleString('vi-VN')}đ
+                                    </div>
+                                    {isPending && (
+                                      <button
+                                        style={{
+                                          background: '#f97316',
+                                          color: '#ffffff',
+                                          border: 'none',
+                                          padding: '6px 18px',
+                                          borderRadius: 8,
+                                          fontSize: 12,
+                                          fontWeight: 700,
+                                          cursor: 'pointer',
+                                          boxShadow: '0 2px 4px rgba(249,115,22,0.3)'
+                                        }}
+                                        onClick={() => handlePayBill(bill, index)}
+                                      >
+                                        Thanh toán
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8, textAlign: 'center' }}>
+                                  {[
+                                    { label: 'Tiền nhà', value: rentVal },
+                                    { label: 'Điện', value: elecVal },
+                                    { label: 'Nước', value: waterVal },
+                                    { label: 'Internet', value: netVal },
+                                    { label: 'Khác', value: otherVal },
+                                  ].map((item, i) => (
+                                    <div key={i} style={{ background: '#f8fafc', padding: '8px 4px', borderRadius: 8, border: '1px solid #f1f5f9' }}>
+                                      <div style={{ fontSize: 11, color: '#64748b', fontWeight: 500 }}>{item.label}</div>
+                                      <div style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', marginTop: 2 }}>
+                                        {item.value >= 1000 ? `${(item.value / 1000).toLocaleString()}k` : `${item.value}đ`}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()
+              )}
+            </div>
+          )}
           {/* DANH SÁCH YÊU THÍCH */}
           {!isLandlord && activeNav === 'favorites' && (
             <AntCard title="❤️ Danh sách phòng trọ đã lưu" className="shadow-sm border-0" style={{ borderRadius: 16 }}>
@@ -2305,8 +2553,8 @@ const Home = ({ onLogout }) => {
               <List.Item.Meta
                 avatar={
                   item.type === 'SUCCESS' ? <CheckCircleOutlined style={{ color: '#52c41a', fontSize: 22 }} /> :
-                  item.type === 'WARNING' ? <InfoCircleOutlined style={{ color: '#ff4d4f', fontSize: 22 }} /> :
-                  <BellOutlined style={{ color: '#1677ff', fontSize: 22 }} />
+                    item.type === 'WARNING' ? <InfoCircleOutlined style={{ color: '#ff4d4f', fontSize: 22 }} /> :
+                      <BellOutlined style={{ color: '#1677ff', fontSize: 22 }} />
                 }
                 title={<strong style={{ fontSize: 14 }}>{item.title}</strong>}
                 description={

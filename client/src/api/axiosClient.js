@@ -16,6 +16,7 @@ axiosClient.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
     if (token) {
+      // Đảm bảo gắn đúng cả 2 chuẩn header nếu backend cần
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
