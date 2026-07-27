@@ -2,8 +2,10 @@ import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/commo
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Room } from './room.entity';
+import { CreateRoomDto } from './dto/create-room.dto';
 import { RoomImage } from './room-image.entity';
 import { Contract, ContractStatus } from '../contract/contract.entity';
+import { Favourite } from '../favourite/favourite.entity';
 
 @Injectable()
 export class RoomService {
@@ -13,6 +15,9 @@ export class RoomService {
 
     @InjectRepository(Contract)
     private contractRepository: Repository<Contract>,
+    
+    @InjectRepository(Favourite)
+    private favouriteRepository: Repository<Favourite>,
   ) { }
 
   // =========================================================================
@@ -21,14 +26,15 @@ export class RoomService {
   // =========================================================================
 
   // F10: Tạo phòng trọ mới với trạng thái mặc định ban đầu là Available
-  async create(landlordId: number, roomData: Partial<Room>): Promise<Room> {
-    const newRoom = this.roomRepository.create({
-      ...roomData,
-      landlordId,
-      status: roomData.status || 'Available',
-    });
-    return await this.roomRepository.save(newRoom);
-  }
+  async create(createRoomDto: CreateRoomDto, landlordId: number): Promise<Room> {
+  // 🟢 Gán landlordId vào đối tượng room chuẩn bị lưu vào DB
+  const newRoom = this.roomRepository.create({
+    ...createRoomDto,
+    landlordId: Number(landlordId), // Đảm bảo ép kiểu số
+  });
+
+  return await this.roomRepository.save(newRoom);
+}
 
   // F11: Lấy danh sách phòng lọc theo landlord_id của chủ nhà hiện tại
   async findMyRooms(landlordId: number): Promise<Room[]> {
@@ -59,12 +65,25 @@ export class RoomService {
     return updatedRoom!;
   }
 
-  // F13: Xóa bài đăng phòng trọ
-  async remove(id: number, landlordId: number): Promise<{ message: string }> {
-    await this.findAndVerifyOwnership(id, landlordId);
-    await this.roomRepository.delete(id);
-    return { message: `Xóa thành công phòng trọ có ID ${id}` };
+  async remove(roomId: number, landlordId: number) {
+  // 1. Kiểm tra xem phòng có tồn tại và thuộc quyền sở hữu của Landlord không
+  const room = await this.roomRepository.findOne({
+    where: { id: roomId, landlordId },
+  });
+
+  if (!room) {
+    throw new NotFoundException('Không tìm thấy phòng trọ hoặc bạn không có quyền xóa');
   }
+
+  // 2. Xóa các hợp đồng liên quan trong bảng contracts trước (tránh lỗi khóa ngoại)
+  await this.contractRepository.delete({ roomId });
+
+  // 3. Xóa các bản ghi yêu thích liên quan trong bảng favourites (nếu có)
+  await this.favouriteRepository.delete({ roomId });
+
+  // 4. Tiến hành xóa phòng trọ
+  return await this.roomRepository.remove(room);
+}
 
   // =========================================================================
   // [ZONE 2] KHU VỰC LOGIC CỦA TV2

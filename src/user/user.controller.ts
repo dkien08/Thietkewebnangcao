@@ -22,21 +22,24 @@ export class UserController {
   @Get("profile")
   @UseGuards(JwtAuthGuard)
   getProfile(@Req() req: any) {
-    return this.userService.findOne(req.user.sub);
+    const userId = req.user?.sub ?? req.user?.userId ?? req.user?.id;
+    return this.userService.findOne(userId);
   }
 
   // F03.1: Sửa profile bản thân -> PUT /api/users/profile
   @Put("profile")
   @UseGuards(JwtAuthGuard)
   updateProfile(@Req() req: any, @Body() updateData: UpdateUserDto) {
-    return this.userService.update(req.user.sub, updateData);
+    const userId = req.user?.sub ?? req.user?.userId ?? req.user?.id;
+    return this.userService.update(userId, updateData);
   }
 
   // F03.2: Chuyển đổi chế độ (Tenant <-> Landlord) -> PUT /api/users/switch-mode
   @Put("switch-mode")
   @UseGuards(JwtAuthGuard)
   async switchMode(@Req() req: any) {
-    return this.userService.switchMode(req.user.sub);
+    const userId = req.user?.sub ?? req.user?.userId ?? req.user?.id;
+    return this.userService.switchMode(userId);
   }
 
   // --- Các API Quản trị hệ thống (Chỉ Admin) ---

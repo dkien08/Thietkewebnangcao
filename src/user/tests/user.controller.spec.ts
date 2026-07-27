@@ -48,6 +48,18 @@ describe('UserController', () => {
       expect(result).toEqual(expectedUser);
       expect(service.findOne).toHaveBeenCalledWith(1);
     });
+
+    it('should return user profile based on req.user.userId when sub is missing', async () => {
+      const req = { user: { userId: 7 } };
+      const expectedUser = { id: 7, name: 'Admin', role: 'Landlord' };
+
+      mockUserService.findOne.mockResolvedValue(expectedUser);
+
+      const result = await controller.getProfile(req);
+
+      expect(result).toEqual(expectedUser);
+      expect(service.findOne).toHaveBeenCalledWith(7);
+    });
   });
 
   describe('F03.1: updateProfile', () => {

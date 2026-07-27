@@ -20,8 +20,11 @@ export class ContractController {
 
   // Hàm hỗ trợ lấy User ID từ Request an toàn (Chống undefined)
   private getUserId(req: any): number {
-    return req.user?.id || req.user?.userId || req.user?.sub;
-  }
+  const userId = req.user?.sub ?? req.user?.userId ?? req.user?.id;
+  console.log('👉 [DEBUG CONTRACT CONTROLLER] Payload User từ JWT Token:', req.user);
+  console.log('👉 [DEBUG CONTRACT CONTROLLER] Parsed User ID:', userId);
+  return Number(userId);
+}
 
   // F08: POST /api/contracts (Tenant tạo yêu cầu thuê phòng)
   @Post()
@@ -64,4 +67,10 @@ export class ContractController {
     const userId = this.getUserId(req);
     return this.contractService.terminateContract(id, userId);
   }
+  @Get('my-active')
+@UseGuards(JwtAuthGuard)
+async getMyActiveContract(@Req() req: any) {
+  const tenantId = this.getUserId(req);
+  return this.contractService.getMyActiveContract(tenantId);
+}
 }
