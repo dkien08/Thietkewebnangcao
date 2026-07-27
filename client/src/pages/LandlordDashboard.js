@@ -729,9 +729,7 @@ const LandlordDashboard = ({ onLogout }) => {
         show={showImageModal}
         onHide={() => setShowImageModal(false)}
         room={selectedRoomForImages}
-        onUpdateSuccess={() => {
-          loadLandlordRooms
-        }}
+        onUpdateSuccess={loadLandlordRooms}
       />
 
       {/* ========================================================= */}
