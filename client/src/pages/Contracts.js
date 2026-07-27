@@ -1,344 +1,163 @@
-import React, { useState, useEffect } from 'react';
-import { Row, Col, Form as BsForm } from 'react-bootstrap';
-import {
-  Table, Button, Modal, Form, Input, InputNumber, Select, Tag, Space, message, Popconfirm, Card, DatePicker
-} from 'antd';
-import {
-  PlusOutlined, EditOutlined, FileTextOutlined, CheckCircleOutlined, CloseCircleOutlined, ClockCircleOutlined, StopOutlined
-} from '@ant-design/icons';
-import dayjs from 'dayjs';
-import { contractApi } from './contractApi'; // Import API hợp đồng đã tạo
-import { roomApi } from './roomApi';         // Import roomApi để lấy danh sách phòng sẵn sàng
+// client/src/pages/Contracts.js
+import React, { useEffect, useState } from 'react';
+import { Container, Table, Badge, Button, Spinner, Alert, Modal, Tag } from 'react-bootstrap';
+import { useNavigate } from 'react-router-dom';
+import { contractApi } from '../api/contractApi';
+import { userApi } from '../api/userApi';
 
 const Contracts = () => {
+  const navigate = useNavigate();
   const [contracts, setContracts] = useState([]);
-  const [availableRooms, setAvailableRooms] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingContract, setEditingContract] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [userMode, setUserMode] = useState('Tenant');
 
-  const [form] = Form.useForm();
-
-  // 🔄 F14: Lấy danh sách hợp đồng của Chủ nhà từ Backend
-  const fetchContracts = async () => {
-    setLoading(true);
+  const loadContracts = async () => {
     try {
-      const res = await contractApi.getLandlordContracts();
-      setContracts(res.data || []);
-    } catch (error) {
-      message.error(error.response?.data?.message || 'Không thể tải danh sách hợp đồng!');
+      setLoading(true);
+      setError('');
+
+      // 1. Lấy thông tin user hiện tại
+      const userRes = await userApi.getProfile();
+      const userData = userRes.data || userRes;
+      const currentMode = userData.currentMode || userData.role || 'Tenant';
+      setUserMode(currentMode);
+
+      // 2. Gọi đúng API tương ứng với Mode
+      let res;
+      if (currentMode === 'Landlord') {
+        res = await contractApi.getLandlordContracts(); // F14
+      } else {
+        res = await contractApi.getTenantContracts(); // F09
+      }
+
+      setContracts(res.data || res || []);
+    } catch (err) {
+      console.error('Lỗi tải danh sách hợp đồng:', err);
+      setError(err.response?.data?.message || 'Không thể tải danh sách hợp đồng.');
     } finally {
       setLoading(false);
     }
   };
 
-  // 🏠 Lấy danh sách các phòng đang SẴN SÀNG (AVAILABLE) để tạo hợp đồng mới
-  const fetchAvailableRooms = async () => {
-    try {
-      const res = await roomApi.getLandlordRooms();
-      const rooms = res.data || [];
-      // Lọc các phòng chưa có người thuê
-      setAvailableRooms(rooms.filter(r => r.status === 'AVAILABLE'));
-    } catch (error) {
-      console.error('Lỗi lấy danh sách phòng trống:', error);
-    }
-  };
-
   useEffect(() => {
-    fetchContracts();
+    loadContracts();
   }, []);
 
-  // 🟢 Bật Modal Tạo Hợp Đồng (F15)
-  const handleOpenAddModal = () => {
-    setEditingContract(null);
-    form.resetFields();
-    fetchAvailableRooms(); // Load phòng trống khi mở modal
-    setIsModalOpen(true);
-  };
-
-  // ✏️ Bật Modal Chỉnh sửa / Cập nhật trạng thái Hợp Đồng (F16)
-  const handleOpenEditModal = (record) => {
-    setEditingContract(record);
-    form.setFieldsValue({
-      ...record,
-      startDate: record.startDate ? dayjs(record.startDate) : null,
-      endDate: record.endDate ? dayjs(record.endDate) : null,
-    });
-    setIsModalOpen(true);
-  };
-
-  // 🟢 F15 & F16: Submit Form Hợp đồng
-  const handleSubmitForm = async (values) => {
+  // Xử lý Phê duyệt Hợp đồng (Dành cho Landlord)
+  const handleApprove = async (contractId) => {
     try {
-      const formattedValues = {
-        ...values,
-        startDate: values.startDate ? values.startDate.format('YYYY-MM-DD') : null,
-        endDate: values.endDate ? values.endDate.format('YYYY-MM-DD') : null,
-      };
-
-      if (editingContract) {
-        // F16: Cập nhật thông tin / trạng thái hợp đồng
-        await contractApi.updateContract(editingContract.id, formattedValues);
-        message.success(`[F16] Cập nhật hợp đồng #${editingContract.id} thành công!`);
-      } else {
-        // F15: Lập hợp đồng thuê mới
-        await contractApi.createContract(formattedValues);
-        message.success('[F15] Lập hợp đồng mới thành công!');
-      }
-      setIsModalOpen(false);
-      fetchContracts(); // Refresh lại dữ liệu
-    } catch (error) {
-      message.error(error.response?.data?.message || 'Thao tác thất bại!');
+      await contractApi.approveContract(contractId);
+      alert('Đã phê duyệt yêu cầu thuê phòng thành công!');
+      loadContracts(); // Tải lại danh sách
+    } catch (err) {
+      alert(err.response?.data?.message || 'Không thể duyệt hợp đồng này.');
     }
   };
 
-  // 🔴 F18: Thanh lý / Kết thúc hợp đồng trước hạn
-  const handleTerminateContract = async (contractId) => {
+  // Xử lý Từ chối Hợp đồng (Dành cho Landlord)
+  const handleReject = async (contractId) => {
     try {
-      await contractApi.terminateContract(contractId);
-      message.success(`[F18] Đã thanh lý hợp đồng #${contractId}! Phong trọ đã được chuyển về trạng thái Sẵn sàng.`);
-      fetchContracts();
-    } catch (error) {
-      message.error(error.response?.data?.message || 'Không thể thanh lý hợp đồng này!');
+      await contractApi.rejectContract(contractId);
+      alert('Đã từ chối yêu cầu thuê.');
+      loadContracts();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Thao tác thất bại.');
     }
   };
 
-  // 🎨 Cấu hình hiển thị cột trong Table
-  const columns = [
-    {
-      title: 'Mã HĐ',
-      dataIndex: 'id',
-      key: 'id',
-      render: (id) => <strong style={{ color: '#1677ff' }}>#{id}</strong>
-    },
-    {
-      title: 'Phòng trọ',
-      key: 'room',
-      render: (_, record) => (
-        <div>
-          <div className="fw-bold">{record.room?.title || `Phòng #${record.roomId}`}</div>
-          <small className="text-muted">📍 {record.room?.addressDetail}</small>
-        </div>
-      )
-    },
-    {
-      title: 'Khách thuê',
-      key: 'tenant',
-      render: (_, record) => (
-        <div>
-          <div>👤 {record.tenant?.fullName || record.tenantName || 'N/A'}</div>
-          <small className="text-muted">📞 {record.tenant?.phone || record.tenantPhone || 'N/A'}</small>
-        </div>
-      )
-    },
-    {
-      title: 'Giá thuê & Cọc',
-      key: 'financials',
-      render: (_, record) => (
-        <div>
-          <div>Giá: <strong className="text-danger">{Number(record.monthlyPrice || record.room?.price || 0).toLocaleString()} đ</strong></div>
-          <small className="text-muted">Cọc: {Number(record.depositAmount || 0).toLocaleString()} đ</small>
-        </div>
-      )
-    },
-    {
-      title: 'Thời hạn hợp đồng',
-      key: 'duration',
-      render: (_, record) => (
-        <div style={{ fontSize: '13px' }}>
-          <div>📅 Từ: {record.startDate ? dayjs(record.startDate).format('DD/MM/YYYY') : 'N/A'}</div>
-          <div>📅 Đến: {record.endDate ? dayjs(record.endDate).format('DD/MM/YYYY') : 'N/A'}</div>
-        </div>
-      )
-    },
-    {
-      title: 'Trạng thái',
-      dataIndex: 'status',
-      key: 'status',
-      render: (status) => {
-        if (status === 'ACTIVE') return <Tag icon={<CheckCircleOutlined />} color="success">Đang hiệu lực</Tag>;
-        if (status === 'PENDING') return <Tag icon={<ClockCircleOutlined />} color="warning">Chờ duyệt</Tag>;
-        if (status === 'EXPIRED') return <Tag icon={<StopOutlined />} color="default">Đã hết hạn</Tag>;
-        if (status === 'CANCELLED') return <Tag icon={<CloseCircleOutlined />} color="error">Đã hủy/Thanh lý</Tag>;
-        return <Tag>{status}</Tag>;
-      }
-    },
-    {
-      title: 'Hành động',
-      key: 'action',
-      render: (_, record) => (
-        <Space size="small">
-          <Button
-            type="text"
-            icon={<EditOutlined style={{ color: '#1677ff' }} />}
-            onClick={() => handleOpenEditModal(record)}
-          >
-            Sửa
-          </Button>
-
-          {record.status === 'ACTIVE' && (
-            <Popconfirm
-              title="Thanh lý hợp đồng"
-              description="Bạn có chắc chắn muốn kết thúc hợp đồng này trước thời hạn?"
-              onConfirm={() => handleTerminateContract(record.id)}
-              okText="Thanh lý"
-              cancelText="Hủy"
-              okButtonProps={{ danger: true }}
-            >
-              <Button type="text" danger icon={<StopOutlined />}>
-                Thanh lý (F18)
-              </Button>
-            </Popconfirm>
-          )}
-        </Space>
-      )
+  const getStatusBadge = (status) => {
+    switch (status) {
+      case 'Active':
+        return <Badge bg="success">Đã duyệt (Active)</Badge>;
+      case 'Pending':
+        return <Badge bg="warning" text="dark">Chờ duyệt (Pending)</Badge>;
+      case 'Rejected':
+        return <Badge bg="danger">Đã từ chối (Rejected)</Badge>;
+      case 'Terminated':
+        return <Badge bg="secondary">Đã kết thúc</Badge>;
+      default:
+        return <Badge bg="info">{status}</Badge>;
     }
-  ];
+  };
 
   return (
-    <div>
-      <Card
-        title={
-          <span style={{ fontSize: '18px', fontWeight: 'bold' }}>
-            📜 Quản lý Hợp đồng Thuê nhà (F14)
-          </span>
-        }
-        extra={
-          <Button type="primary" icon={<PlusOutlined />} onClick={handleOpenAddModal}>
-            Lập hợp đồng mới (F15)
-          </Button>
-        }
-        className="shadow-sm border-0"
-      >
-        <Table
-          columns={columns}
-          dataSource={contracts}
-          rowKey="id"
-          loading={loading}
-          pagination={{ pageSize: 5 }}
-        />
-      </Card>
+    <Container className="py-4">
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <div>
+          <h3> Quản Lý Hợp Đồng & Yêu Cầu Thuê</h3>
+          <small className="text-muted">
+            Chế độ hiện tại: <strong>{userMode === 'Landlord' ? 'Chủ nhà' : 'Người thuê'}</strong>
+          </small>
+        </div>
+        <Button variant="outline-secondary" onClick={() => navigate(userMode === 'Landlord' ? '/landlord' : '/')}>
+          Quay lại
+        </Button>
+      </div>
 
-      {/* 📝 MODAL LẬP MỚI (F15) HOẶC CẬP NHẬT (F16) HỢP ĐỒNG */}
-      <Modal
-        title={
-          editingContract
-            ? `✏️ F16: Cập nhật Hợp đồng #${editingContract.id}`
-            : '➕ F15: Lập Hợp đồng Thuê nhà Mới'
-        }
-        open={isModalOpen}
-        onCancel={() => setIsModalOpen(false)}
-        footer={null}
-        destroyOnClose
-        width={650}
-      >
-        <Form form={form} layout="vertical" onFinish={handleSubmitForm}>
-          {!editingContract ? (
-            <Form.Item
-              label="Chọn Phòng trọ (Chỉ phòng đang trống)"
-              name="roomId"
-              rules={[{ required: true, message: 'Vui lòng chọn phòng trọ!' }]}
-            >
-              <Select
-                placeholder="--- Chọn phòng trọ ---"
-                options={availableRooms.map(r => ({
-                  value: r.id,
-                  label: `#${r.id} - ${r.title} (${Number(r.price).toLocaleString()} đ/tháng)`
-                }))}
-              />
-            </Form.Item>
-          ) : (
-            <div className="mb-3 p-2 bg-light rounded">
-              <strong>Phòng đang thuê:</strong> #{editingContract.roomId} - {editingContract.room?.title}
-            </div>
-          )}
+      {error && <Alert variant="danger">{error}</Alert>}
 
-          <Row className="g-2">
-            <Col md={6}>
-              <Form.Item
-                label="Mã Khách thuê (Tenant ID)"
-                name="tenantId"
-                rules={[{ required: true, message: 'Nhập ID khách thuê!' }]}
-              >
-                <Input placeholder="Ví dụ: 2 (ID tài khoản khách)" />
-              </Form.Item>
-            </Col>
-
-            <Col md={6}>
-              <Form.Item
-                label="Số tiền đặt cọc (VNĐ)"
-                name="depositAmount"
-                rules={[{ required: true, message: 'Nhập số tiền cọc!' }]}
-              >
-                <InputNumber style={{ width: '100%' }} placeholder="5000000" />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row className="g-2">
-            <Col md={6}>
-              <Form.Item
-                label="Giá thuê thỏa thuận (VNĐ/tháng)"
-                name="monthlyPrice"
-                rules={[{ required: true, message: 'Nhập giá thuê hàng tháng!' }]}
-              >
-                <InputNumber style={{ width: '100%' }} placeholder="4500000" />
-              </Form.Item>
-            </Col>
-
-            <Col md={6}>
-              {editingContract && (
-                <Form.Item
-                  label="Trạng thái Hợp đồng"
-                  name="status"
-                  rules={[{ required: true, message: 'Chọn trạng thái!' }]}
-                >
-                  <Select options={[
-                    { value: 'ACTIVE', label: '🟢 Đang hiệu lực (ACTIVE)' },
-                    { value: 'PENDING', label: '🟡 Chờ xác nhận (PENDING)' },
-                    { value: 'EXPIRED', label: '⚪ Đã hết hạn (EXPIRED)' },
-                    { value: 'CANCELLED', label: '🔴 Đã hủy/Thanh lý (CANCELLED)' },
-                  ]} />
-                </Form.Item>
-              )}
-            </Col>
-          </Row>
-
-          <Row className="g-2">
-            <Col md={6}>
-              <Form.Item
-                label="Ngày bắt đầu"
-                name="startDate"
-                rules={[{ required: true, message: 'Chọn ngày bắt đầu!' }]}
-              >
-                <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" placeholder="Chọn ngày" />
-              </Form.Item>
-            </Col>
-
-            <Col md={6}>
-              <Form.Item
-                label="Ngày kết thúc"
-                name="endDate"
-                rules={[{ required: true, message: 'Chọn ngày kết thúc!' }]}
-              >
-                <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" placeholder="Chọn ngày" />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Form.Item label="Điều khoản bổ sung / Ghi chú" name="terms">
-            <Input.TextArea rows={3} placeholder="Ghi chú về đóng tiền điện nước, quy định bồi thường..." />
-          </Form.Item>
-
-          <div className="d-flex justify-content-end gap-2 mt-3">
-            <Button onClick={() => setIsModalOpen(false)}>Hủy</Button>
-            <Button type="primary" htmlType="submit">
-              {editingContract ? 'Lưu cập nhật (F16)' : 'Lập hợp đồng (F15)'}
-            </Button>
-          </div>
-        </Form>
-      </Modal>
-    </div>
+      {loading ? (
+        <div className="text-center py-5">
+          <Spinner animation="border" />
+          <p className="mt-2 text-muted">Đang tải danh sách hợp đồng...</p>
+        </div>
+      ) : (
+        <Table striped bordered hover responsive className="align-middle shadow-sm bg-white">
+          <thead className="table-light">
+            <tr>
+              <th>#</th>
+              <th>Tên phòng trọ</th>
+              <th>{userMode === 'Landlord' ? 'Người gửi yêu cầu (Tenant)' : 'Giá thuê'}</th>
+              <th>Ngày bắt đầu</th>
+              <th>Ngày kết thúc</th>
+              <th>Trạng thái</th>
+              {userMode === 'Landlord' && <th>Thao tác</th>}
+            </tr>
+          </thead>
+          <tbody>
+            {contracts.length === 0 ? (
+              <tr>
+                <td colSpan={userMode === 'Landlord' ? 7 : 6} className="text-center py-4 text-muted">
+                  Chưa có hợp đồng hoặc yêu cầu thuê nào.
+                </td>
+              </tr>
+            ) : (
+              contracts.map((item, index) => (
+                <tr key={item.id}>
+                  <td>{index + 1}</td>
+                  <td><strong>{item.room?.title || `Phòng #${item.roomId}`}</strong></td>
+                  <td>
+                    {userMode === 'Landlord'
+                      ? item.tenant?.username || `ID Tenant: ${item.tenantId}`
+                      : `${Number(item.price || item.room?.price || 0).toLocaleString('vi-VN')} đ/tháng`}
+                  </td>
+                  <td>{new Date(item.startDate).toLocaleDateString('vi-VN')}</td>
+                  <td>{new Date(item.endDate).toLocaleDateString('vi-VN')}</td>
+                  <td>{getStatusBadge(item.status)}</td>
+                  {userMode === 'Landlord' && (
+                    <td>
+                      {item.status === 'Pending' ? (
+                        <>
+                          <Button variant="success" size="sm" className="me-2" onClick={() => handleApprove(item.id)}>
+                            Duyệt
+                          </Button>
+                          <Button variant="outline-danger" size="sm" onClick={() => handleReject(item.id)}>
+                            Từ chối
+                          </Button>
+                        </>
+                      ) : (
+                        <small className="text-muted">Hoàn tất</small>
+                      )}
+                    </td>
+                  )}
+                </tr>
+              ))
+            )}
+          </tbody>
+        </Table>
+      )}
+    </Container>
   );
 };
 

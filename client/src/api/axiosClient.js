@@ -1,22 +1,40 @@
+// client/src/api/axiosClient.js
 import axios from 'axios';
 
-// Domain Backend GitHub Codespace Port 3000 của bạn
-const CODESPACE_BACKEND_URL = 'https://bug-free-broccoli-jjqp6g4x9jjrcqrqw-3000.app.github.dev';
+const getBaseUrl = () => {
+  // 1. Ưu tiên lấy từ biến môi trường nếu có
+  if (process.env.REACT_APP_API_URL) {
+    return process.env.REACT_APP_API_URL;
+  }
+
+  // 2. Tự động suy luận trên GitHub Codespaces
+  if (window.location.hostname.includes('app.github.dev')) {
+    const hostname = window.location.hostname;
+    const parts = hostname.split('-');
+    
+    // 🟢 Chuyển từ port hiện tại của Frontend (3001) sang port 3000 của Backend
+    parts[parts.length - 1] = '3000.app.github.dev';
+    const backendHost = parts.join('-');
+    
+    return `https://${backendHost}/api`;
+  }
+
+  // 3. Mặc định chạy ở Localhost (Backend chạy port 3000)
+  return 'http://localhost:3000/api';
+};
 
 const axiosClient = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || `${CODESPACE_BACKEND_URL}/api`,
-  withCredentials: true, // BẮT BUỘC: Đề gửi kèm Cookie chứa JWT sang Backend NestJS
+  baseURL: getBaseUrl(),
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Tự động đính kèm Token dự phòng nếu có lưu ở localStorage
+// Interceptor tự động đính kèm Token vào mỗi Request
 axiosClient.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
     if (token) {
-      // Đảm bảo gắn đúng cả 2 chuẩn header nếu backend cần
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
@@ -24,15 +42,10 @@ axiosClient.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Xử lý Lỗi tập trung
+// Trả về nguyên bản response để các trang đọc .data chuẩn xác
 axiosClient.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.response && error.response.status === 401) {
-      // Có thể xử lý tự động điều hướng sang trang /login tại đây
-    }
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
 export default axiosClient;
