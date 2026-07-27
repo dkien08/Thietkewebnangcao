@@ -1,28 +1,22 @@
 import { NestFactory } from "@nestjs/core";
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from "./app.module";
 import cookieParser from "cookie-parser";
 import helmet from "helmet";
+import { join } from "path";
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   // 1. Cấu hình CORS (Phản hồi lại đúng Origin để hoạt động tốt với credentials: true)
   app.enableCors({
     origin: (origin, callback) => {
-      // Cho phép request không có origin (like mobile apps/postman) hoặc đúng domain
-      if (
-        !origin ||
-        origin.includes("app.github.dev") ||
-        origin.includes("localhost")
-      ) {
-        callback(null, true);
-      } else {
-        callback(null, true); // Chấp nhận tất cả domain gửi kèm credentials
-      }
+      // Cho phép tất cả request (kể cả Preflight OPTIONS) từ Codespaces & Localhost
+      callback(null, true);
     },
-    methods: "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS",
-    credentials: true,
-    allowedHeaders: "Content-Type, Accept, Authorization",
+    credentials: true, // Cho phép đính kèm Cookie/Header Authorization
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With'],
   });
 
   app.use(cookieParser());
@@ -36,6 +30,10 @@ async function bootstrap() {
 
   // 3. Prefix API chung
   app.setGlobalPrefix("api");
+
+  app.useStaticAssets(join(__dirname, '..', 'uploads'), {
+    prefix: '/uploads/',
+  });
 
   const port = process.env.PORT || 3001;
   await app.listen(port, "0.0.0.0");

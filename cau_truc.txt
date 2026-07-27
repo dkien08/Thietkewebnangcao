@@ -11,14 +11,21 @@ C:\Users\admin\Documents\Laptrinh\thietkewebnangcao\Thietkewebnangcao-main
 |  |  └── robots.txt
 |  ├── README.md
 |  └── src
+|     ├── features
+|     |    └── rooms-public
+|     |        ├── MainLayout.jsx
+|     |        ├── RoomCard.jsx
+|     |        ├── RoomDetailModal.jsx
+|     |        ├── RoomFilter.jsx
+|     |        ├── RoomImageManagementModal.jsx
+|     |        ├── RoomList.jsx
+|     |        └── roomsApi.js
 |     ├── api
 |     |  ├── axiosClient.js
 |     |  ├── roomApi.js
 |     |  └── userApi.js
 |     ├── App.css
 |     ├── App.js
-|     ├── components
-|     |  └── ProfileModal.js
 |     ├── index.css
 |     ├── index.js
 |     └── pages
@@ -27,10 +34,6 @@ C:\Users\admin\Documents\Laptrinh\thietkewebnangcao\Thietkewebnangcao-main
 |        ├── Home.js
 |        ├── Login.js
 |        ├── MyRooms.js
-|        ├── PhenikaaLayout.css
-|        ├── PhenikaaLayout.jsx
-|        ├── PhenikaaLogin.css
-|        ├── PhenikaaLogin.jsx
 |        ├── Register.js
 |        └── UserProfile.jsx
 ├── package-lock.json
@@ -68,15 +71,6 @@ C:\Users\admin\Documents\Laptrinh\thietkewebnangcao\Thietkewebnangcao-main
 |  |  ├── favourite.module.ts
 |  |  ├── favourite.service.spec.ts
 |  |  └── favourite.service.ts
-|  ├── features
-|  |  └── rooms-public
-|  |     ├── MainLayout.jsx
-|  |     ├── RoomCard.jsx
-|  |     ├── RoomDetailModal.jsx
-|  |     ├── RoomFilter.jsx
-|  |     ├── RoomImageManagementModal.jsx
-|  |     ├── RoomList.jsx
-|  |     └── roomsApi.js
 |  ├── main.ts
 |  ├── report
 |  |  ├── report.controller.ts

@@ -21,39 +21,50 @@ export class ContractService {
   ) {}
 
   // F08: Tenant gửi yêu cầu thuê phòng
-  async createContract(tenantId: number, dto: CreateContractDto): Promise<Contract> {
-    const room = await this.roomRepository.findOne({ where: { id: dto.roomId } });
+  async createContract(tenantIdInput: number | string, dto: CreateContractDto): Promise<Contract> {
+    const tenantId = Number(tenantIdInput);
+    const roomId = Number(dto.roomId);
 
+    // 1. Kiểm tra phòng trọ có tồn tại không
+    const room = await this.roomRepository.findOne({ where: { id: roomId } });
     if (!room) {
-      throw new NotFoundException('Phòng trọ không tồn tại');
+      throw new NotFoundException('Không tìm thấy phòng trọ này');
     }
 
+    // 2. Kiểm tra trạng thái phòng
     if (room.status !== 'Available') {
-      throw new BadRequestException('Phòng trọ này hiện không trống để đăng ký thuê');
+      throw new BadRequestException('Phòng trọ này hiện không còn trống');
     }
 
-    const existingRequest = await this.contractRepository.findOne({
-      where: {
-        tenantId,
-        roomId: dto.roomId,
-        status: ContractStatus.PENDING,
-      },
+    // 3. Kiểm tra xem người gửi có phải chính chủ nhà đăng phòng không
+    if (Number(room.landlordId) === tenantId) {
+      throw new BadRequestException('Bạn không thể gửi yêu cầu thuê phòng do chính mình quản lý');
+    }
+
+    // 4. Kiểm tra trùng lặp yêu cầu thuê phòng
+    const existingContract = await this.contractRepository.findOne({
+      where: [
+        { tenantId, roomId, status: ContractStatus.PENDING },
+        { tenantId, roomId, status: ContractStatus.ACTIVE },
+      ],
     });
 
-    if (existingRequest) {
-      throw new BadRequestException('Bạn đã gửi yêu cầu thuê phòng này rồi, vui lòng chờ chủ nhà phê duyệt');
+    if (existingContract) {
+      throw new BadRequestException('Bạn đã gửi yêu cầu thuê phòng này rồi, vui lòng chờ chủ nhà xử lý.');
     }
+
+    // 5. Ép kiểu dữ liệu an toàn trước khi lưu TypeORM
+    const finalPrice = dto.price ? Number(dto.price) : Number(room.price);
 
     const newContract = this.contractRepository.create({
-      tenantId,
-      roomId: dto.roomId,
-      startDate: dto.startDate,
-      endDate: dto.endDate,
-      price: dto.price || room.price,
-      status: ContractStatus.PENDING,
-    });
+  tenantId,
+  roomId,
+  endDate: new Date(dto.endDate), // Chỉ lưu endDate đúng theo cấu trúc DB của bạn
+  price: finalPrice,
+  status: ContractStatus.PENDING, // Trạng thái 'PENDING' viết hoa
+});
 
-    return await this.contractRepository.save(newContract);
+return await this.contractRepository.save(newContract);
   }
 
   // F09: Danh sách hợp đồng của Tenant
@@ -64,17 +75,38 @@ export class ContractService {
       order: { createdAt: 'DESC' },
     });
   }
+  async getMyActiveContract(tenantId: number) {
+  const contract = await this.contractRepository.findOne({
+    where: [
+      { tenantId, status: ContractStatus.ACTIVE },  // ✅ Dùng Enum
+      { tenantId, status: ContractStatus.PENDING }, // ✅ Dùng Enum
+    ],
+    relations: ['room', 'room.landlord'],
+    order: { id: 'DESC' },
+  });
 
-  // F14: Danh sách phòng chờ duyệt cho Landlord
-  async findByLandlord(landlordId: number): Promise<Contract[]> {
-    return await this.contractRepository
-      .createQueryBuilder('contract')
-      .innerJoinAndSelect('contract.room', 'room')
-      .innerJoinAndSelect('contract.tenant', 'tenant')
-      .where('room.landlordId = :landlordId', { landlordId })
-      .orderBy('contract.createdAt', 'DESC')
-      .getMany();
+  return contract || null;
+}
+
+ // F14: Lấy tất cả hợp đồng thuộc các phòng của Landlord (Dùng cho trang Quản lý Hợp đồng & Thống kê)
+// F14: Lấy tất cả hợp đồng thuộc các phòng của Landlord
+async findByLandlord(landlordIdInput: number | string): Promise<Contract[]> {
+  const landlordId = Number(landlordIdInput);
+  console.log('👉 [DEBUG CONTRACT SERVICE] Querying contracts for Landlord ID:', landlordId);
+
+  if (!landlordId || isNaN(landlordId)) {
+    console.warn('⚠️ [DEBUG] landlordId không hợp lệ (NaN/undefined)!');
+    return [];
   }
+
+  return await this.contractRepository
+    .createQueryBuilder('contract')
+    .leftJoinAndSelect('contract.room', 'room')    // Dùng leftJoin thay cho innerJoin để tránh mất bản ghi
+    .leftJoinAndSelect('contract.tenant', 'tenant')  // Dùng leftJoin để an toàn
+    .where('room.landlordId = :landlordId', { landlordId })
+    .orderBy('contract.createdAt', 'DESC')
+    .getMany();
+}
 
   // F15: Landlord Phê duyệt hợp đồng (Đổi status hợp đồng -> Active, phòng -> Rented)
   async approveContract(id: number, landlordId: number) {

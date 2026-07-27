@@ -5,9 +5,10 @@ import { RoomImage } from './room-image.entity';
 import { RoomService } from './room.service';
 import { RoomController } from './room.controller';
 import { Contract } from '../contract/contract.entity';
+import { Favourite } from '../favourite/favourite.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Room, RoomImage,Contract])], 
+  imports: [TypeOrmModule.forFeature([Room, RoomImage,Contract, Favourite])], 
   providers: [RoomService],
   controllers: [RoomController],
   exports: [RoomService],

@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { Form, Button, Alert, Spinner } from 'react-bootstrap';
 import { UserOutlined, KeyOutlined, EyeOutlined, EyeInvisibleOutlined, QuestionCircleOutlined } from '@ant-design/icons';
-import './PhenikaaLogin.css';
+import './Login.css';
 import { userApi } from '../api/userApi';
 
-const PhenikaaLogin = ({ onLoginSuccess, onSwitchToRegister }) => {
+const Login = ({ onLoginSuccess, onSwitchToRegister }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -20,52 +20,25 @@ const PhenikaaLogin = ({ onLoginSuccess, onSwitchToRegister }) => {
 
     try {
       const response = await userApi.login({ username, password });
+      const authData = response.data || {};
+      const accessToken = authData.accessToken || authData.token;
+      const userData = authData.user || { username };
 
-      setSuccessMessage(response.data?.message || 'Đăng nhập thành công!');
-
-      // 🔍 1. TRÍCH XUẤT TOKEN CHUẨN TỪ API (Hỗ trợ mọi kiểu cấu trúc response backend)
-      const token = 
-        response.data?.token || 
-        response.data?.accessToken || 
-        response.data?.access_token ||
-        response.data?.data?.token ||
-        response.data?.data?.accessToken;
-
-      if (token) {
-        localStorage.setItem('token', token);
-      } else {
-        console.warn('Cảnh báo: Backend không trả về token trong response!');
+      if (!accessToken) {
+        throw new Error('Không nhận được token từ máy chủ.');
       }
 
-      // 🔍 2. Lấy thông tin profile vừa sửa gần nhất trong cache (nếu có)
-      const savedProfileStr = localStorage.getItem('saved_user_profile');
-      let savedProfile = null;
-      if (savedProfileStr) {
-        try {
-          savedProfile = JSON.parse(savedProfileStr);
-        } catch (err) {
-          savedProfile = null;
-        }
-      }
+      setSuccessMessage(authData.message || 'Đăng nhập thành công!');
 
-      // 💡 LOGIC XỬ LÝ THÔNG TIN TÀI KHOẢN:
-      const userData = response.data?.user || response.data?.data?.user || response.data;
-      if (savedProfile && (savedProfile.username === username || savedProfile.email === username)) {
-        localStorage.setItem('user', JSON.stringify(savedProfile));
-      } else if (userData && typeof userData === 'object') {
-        localStorage.setItem('user', JSON.stringify(userData));
-        localStorage.removeItem('saved_user_profile');
-      } else {
-        const newUser = { username };
-        localStorage.setItem('user', JSON.stringify(newUser));
-        localStorage.removeItem('saved_user_profile');
-      }
+      localStorage.setItem('user', JSON.stringify(userData));
+      localStorage.setItem('token', accessToken);
+      localStorage.setItem('accessToken', accessToken);
 
       setTimeout(() => {
         if (onLoginSuccess) {
           onLoginSuccess();
         }
-      }, 500);
+      }, 800);
 
     } catch (error) {
       if (error.response && error.response.data) {
@@ -76,36 +49,7 @@ const PhenikaaLogin = ({ onLoginSuccess, onSwitchToRegister }) => {
           setErrorMessage(resData.message || 'Tài khoản hoặc mật khẩu không chính xác!');
         }
       } else {
-        // 🛠️ Fallback cho môi trường Local / Offline Mock API
-        const savedProfileStr = localStorage.getItem('saved_user_profile');
-        let savedProfile = null;
-        if (savedProfileStr) {
-          try {
-            savedProfile = JSON.parse(savedProfileStr);
-          } catch (err) {
-            savedProfile = null;
-          }
-        }
-
-        if (savedProfile && (savedProfile.username === username || savedProfile.email === username)) {
-          localStorage.setItem('user', JSON.stringify(savedProfile));
-        } else {
-          const mockUser = {
-            username: username,
-            fullName: username,
-          };
-          localStorage.setItem('user', JSON.stringify(mockUser));
-          localStorage.removeItem('saved_user_profile');
-        }
-
-        localStorage.setItem('token', 'mock-jwt-token');
-        setSuccessMessage('Đăng nhập thành công!');
-
-        setTimeout(() => {
-          if (onLoginSuccess) {
-            onLoginSuccess();
-          }
-        }, 500);
+        setErrorMessage(error.message || 'Không thể kết nối đến máy chủ Backend!');
       }
     } finally {
       setLoading(false);
@@ -113,15 +57,15 @@ const PhenikaaLogin = ({ onLoginSuccess, onSwitchToRegister }) => {
   };
 
   return (
-    <div className="phenikaa-login-container">
+    <div className="custom-login-container">
       <div className="login-overlay"></div>
 
       <div className="login-wrapper">
         <div className="login-logo text-center mb-4">
           <h1 className="logo-text">
-            PHENIKAA <span className="logo-circle"></span>
+            ROOM <span className="logo-circle"></span>
           </h1>
-          <div className="logo-sub">UNIVERSITY</div>
+          <div className="logo-sub">MANAGEMENT SYSTEM</div>
         </div>
 
         <div className="login-card">
@@ -132,7 +76,7 @@ const PhenikaaLogin = ({ onLoginSuccess, onSwitchToRegister }) => {
             </svg>
           </div>
 
-          <h2 className="login-title">ĐĂNG NHẬP</h2>
+          <h2 className="login-title">ĐĂNG NHẬP HỆ THỐNG</h2>
 
           {errorMessage && <Alert variant="danger" className="py-2 text-center fs-7 mt-3 mb-0">{errorMessage}</Alert>}
           {successMessage && <Alert variant="success" className="py-2 text-center fs-7 mt-3 mb-0">{successMessage}</Alert>}
@@ -181,7 +125,7 @@ const PhenikaaLogin = ({ onLoginSuccess, onSwitchToRegister }) => {
               </a>
             </div>
 
-            <Button type="submit" className="w-100 btn-phenikaa-login mb-3" disabled={loading}>
+            <Button type="submit" className="w-100 btn-custom-login mb-3" disabled={loading}>
               {loading ? (
                 <>
                   <Spinner animation="border" size="sm" className="me-2" />
@@ -192,7 +136,7 @@ const PhenikaaLogin = ({ onLoginSuccess, onSwitchToRegister }) => {
               )}
             </Button>
 
-            <div className="text-center mb-3 fs-7">
+            <div className="text-center mb-2 fs-7">
               Chưa có tài khoản?{' '}
               <span 
                 className="text-primary fw-bold text-decoration-underline" 
@@ -209,4 +153,4 @@ const PhenikaaLogin = ({ onLoginSuccess, onSwitchToRegister }) => {
   );
 };
 
-export default PhenikaaLogin;
+export default Login;

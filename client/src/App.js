@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter } from 'react-router-dom';
-import PhenikaaLogin from './pages/PhenikaaLogin';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import PhenikaaLogin from './pages/Login';
 import Register from './pages/Register';
 import Home from './pages/Home';
+import UserProfile from './pages/UserProfile';
+import Contracts from './pages/Contracts';
+import Favorites from './pages/Favorites';
+import MyRooms from './pages/MyRooms';
+import LandlordDashboard from './pages/LandlordDashboard';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './App.css';
 import { userApi } from './api/userApi';
-
 
 function AppContent() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -15,35 +19,27 @@ function AppContent() {
 
   useEffect(() => {
     const checkAuthStatus = async () => {
-      const token = localStorage.getItem('token');
-      const savedProfile = localStorage.getItem('saved_user_profile');
+      const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
       const localUser = localStorage.getItem('user');
 
-      // Ưu tiên sử dụng Profile người dùng đã chỉnh sửa
-      if (savedProfile) {
-        localStorage.setItem('user', savedProfile);
-        setIsAuthenticated(true);
-      } else if (localUser && token) {
+      if (token && localUser) {
         setIsAuthenticated(true);
       }
 
       try {
-        if (userApi && typeof userApi.getProfile === 'function') {
+        if (userApi && typeof userApi.getProfile === 'function' && token) {
           const res = await userApi.getProfile();
           if (res.data) {
             setIsAuthenticated(true);
-            // Nếu chưa từng sửa profile thì mới dùng dữ liệu từ API
-            if (!localStorage.getItem('saved_user_profile')) {
-              const userData = res.data?.user || res.data?.data || res.data;
-              localStorage.setItem('user', JSON.stringify(userData));
-            }
+            const userData = res.data?.user || res.data?.data || res.data;
+            localStorage.setItem('user', JSON.stringify(userData));
           }
         }
       } catch (error) {
-        console.warn('Chưa đăng nhập hoặc token hết hạn.');
-        if (!token && !savedProfile && !localUser) {
-          setIsAuthenticated(false);
-        }
+        console.warn('Token hết hạn hoặc chưa đăng nhập.');
+        setIsAuthenticated(false);
+        localStorage.removeItem('token');
+        localStorage.removeItem('accessToken');
       } finally {
         setLoading(false);
       }
@@ -56,7 +52,6 @@ function AppContent() {
     setIsAuthenticated(true);
   };
 
-  // Hàm Đăng xuất: Xóa Token nhưng GIỮ LẠI thông tin Profile đã cập nhật
   const handleLogout = async () => {
     try {
       if (userApi && typeof userApi.logout === 'function') {
@@ -65,9 +60,10 @@ function AppContent() {
     } catch (e) {
       console.log('Lỗi đăng xuất:', e);
     } finally {
-      // Chỉ xóa token xác thực, KHÔNG xóa saved_user_profile
       localStorage.removeItem('token');
-      localStorage.removeItem('user'); 
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('user');
+      localStorage.removeItem('saved_user_profile');
       setIsAuthenticated(false);
       setCurrentView('login');
     }
@@ -81,23 +77,39 @@ function AppContent() {
     );
   }
 
-  if (isAuthenticated) {
-    return <Home onLogout={handleLogout} />;
-  }
-
   return (
-    <div>
-      {currentView === 'login' ? (
-        <PhenikaaLogin 
-          onLoginSuccess={handleLoginSuccess} 
-          onSwitchToRegister={() => setCurrentView('register')} 
-        />
+    <Routes>
+      {!isAuthenticated ? (
+        <>
+          <Route 
+            path="*" 
+            element={
+              currentView === 'login' ? (
+                <PhenikaaLogin 
+                  onLoginSuccess={handleLoginSuccess} 
+                  onSwitchToRegister={() => setCurrentView('register')} 
+                />
+              ) : (
+                <Register 
+                  onSwitchToLogin={() => setCurrentView('login')} 
+                />
+              )
+            } 
+          />
+        </>
       ) : (
-        <Register 
-          onSwitchToLogin={() => setCurrentView('login')} 
-        />
+        <>
+          {/* Khi đã đăng nhập, cho phép truy cập các Route chính */}
+          <Route path="/" element={<Home onLogout={handleLogout} />} />
+          <Route path="/profile" element={<UserProfile onLogout={handleLogout} />} />
+          <Route path="/contracts" element={<Contracts />} />
+          <Route path="/favorites" element={<Favorites />} />
+          <Route path="/my-rooms" element={<MyRooms />} />
+          <Route path="/landlord" element={<LandlordDashboard />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </>
       )}
-    </div>
+    </Routes>
   );
 }
 

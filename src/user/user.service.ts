@@ -37,11 +37,13 @@ export class UserService {
   }
 
   async update(id: number, updateData: UpdateUserDto | Partial<User>): Promise<User> {
-    await this.findOne(id); 
-    await this.userRepository.update(id, updateData);
-    const updatedUser = await this.findOne(id);
-    delete (updatedUser as any).password;
-    return updatedUser;
+    const user = await this.findOne(id);
+    if (updateData.phone !== undefined) {
+      user.phone = updateData.phone;
+    }
+    const savedUser = await this.userRepository.save(user);
+    delete (savedUser as any).password;
+    return savedUser;
   }
 
   async remove(id: number): Promise<{ message: string }> {
@@ -101,15 +103,36 @@ export class UserService {
     };
   }
 
-  async switchMode(id: number): Promise<{ message: string; currentRole: string }> {
-    const user = await this.findOne(id);
-    if (user.role === "Admin") {
-      throw new BadRequestException("Không thể chuyển đổi vai trò cho tài khoản Admin");
-    }
-    user.role = user.role === "Tenant" ? "Landlord" : "Tenant";
-    await this.userRepository.save(user);
-    return { message: `Chuyển đổi sang vai trò ${user.role} thành công`, currentRole: user.role };
+  async switchMode(userId: number, newMode?: string) {
+  const user = await this.userRepository.findOne({ where: { id: userId } });
+  if (!user) {
+    throw new BadRequestException("Không tìm thấy người dùng");
   }
+
+  // Nếu không truyền newMode, tự động toggle qua lại giữa Tenant và Landlord
+  if (!newMode) {
+    newMode = user.currentMode === "Tenant" ? "Landlord" : "Tenant";
+  }
+
+  user.currentMode = newMode;
+  await this.userRepository.save(user);
+
+  // 🟢 QUAN TRỌNG: Gán role trong token bằng đúng giá trị currentMode vừa chuyển
+  const payload = { 
+    sub: user.id, 
+    username: user.username, 
+    role: user.role,
+    currentMode: user.currentMode 
+  };
+  
+  const accessToken = this.jwtService.sign(payload);
+
+  return {
+    message: `Chuyển đổi sang vai trò ${newMode} thành công`,
+    accessToken,
+    currentMode: user.currentMode,
+  };
+}
 
   async changePassword(id: number, changePasswordDto: ChangePasswordDto) {
     const { oldPassword, newPassword } = changePasswordDto;

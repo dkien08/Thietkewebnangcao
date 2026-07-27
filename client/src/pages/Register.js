@@ -1,17 +1,20 @@
 import React, { useState } from 'react';
-import { Form, Button, Alert, Spinner, Card } from 'react-bootstrap';
-import { UserOutlined, KeyOutlined, PhoneOutlined, SolutionOutlined } from '@ant-design/icons';
+import { Form, Button, Alert, Spinner } from 'react-bootstrap';
+import { UserOutlined, KeyOutlined, PhoneOutlined, SolutionOutlined, EyeOutlined, EyeInvisibleOutlined } from '@ant-design/icons';
+import './Login.css'; // Sử dụng chung file style với trang Login để đồng bộ giao diện
 import { userApi } from '../api/userApi';
 
 const Register = ({ onSwitchToLogin }) => {
-  // ✅ Chuẩn hóa theo đúng RegisterDto: username, password, phone, role ('Tenant' | 'Landlord')
   const [formData, setFormData] = useState({
     username: '',
     password: '',
+    confirmPassword: '',
     phone: '',
-    role: 'Tenant', // Đúng chữ hoa T như IsEnum(['Tenant', 'Landlord'])
+    role: 'Tenant', // Giá trị mặc định theo đúng enum yêu cầu
   });
 
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -24,14 +27,31 @@ const Register = ({ onSwitchToLogin }) => {
     e.preventDefault();
     setError('');
     setSuccess('');
+
+    // Kiểm tra khớp mật khẩu trước khi gọi API
+    if (formData.password !== formData.confirmPassword) {
+      setError('Mật khẩu xác nhận không khớp!');
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const res = await userApi.register(formData);
-      setSuccess(res.data?.message || 'Đăng ký thành công!');
+      // Chỉ gửi các trường hợp chuẩn theo RegisterDto lên backend (bỏ confirmPassword)
+      const payload = {
+        username: formData.username,
+        password: formData.password,
+        phone: formData.phone,
+        role: formData.role,
+      };
+
+      const res = await userApi.register(payload);
+      setSuccess(res.data?.message || 'Đăng ký tài khoản thành công!');
+      
       setTimeout(() => {
         if (onSwitchToLogin) onSwitchToLogin();
       }, 1500);
+
     } catch (err) {
       const resData = err.response?.data;
       if (resData) {
@@ -49,94 +69,150 @@ const Register = ({ onSwitchToLogin }) => {
   };
 
   return (
-    <div className="d-flex justify-content-center align-items-center vh-100 bg-light">
-      <Card style={{ width: '400px' }} className="p-4 shadow-sm border-0 rounded-3">
-        <h3 className="text-center font-weight-bold mb-4">ĐĂNG KÝ TÀI KHOẢN</h3>
+    <div className="custom-login-container">
+      <div className="login-overlay"></div>
 
-        {error && <Alert variant="danger" className="py-2 small text-center">{error}</Alert>}
-        {success && <Alert variant="success" className="py-2 small text-center">{success}</Alert>}
+      <div className="login-wrapper" style={{ maxWidth: '480px' }}>
+        <div className="login-logo text-center mb-3">
+          <h1 className="logo-text">
+            ROOM <span className="logo-circle"></span>
+          </h1>
+          <div className="logo-sub">MANAGEMENT SYSTEM</div>
+        </div>
 
-        <Form onSubmit={handleSubmit}>
-          {/* Tên đăng nhập (username) */}
-          <Form.Group className="mb-3">
-            <Form.Label className="small fw-semibold">Tên đăng nhập</Form.Label>
-            <div className="input-group">
-              <span className="input-group-text"><UserOutlined /></span>
-              <Form.Control
-                type="text"
-                name="username"
-                placeholder="Từ 3 - 50 ký tự"
-                value={formData.username}
-                onChange={handleChange}
-                minLength={3}
-                maxLength={50}
-                required
-              />
+        <div className="login-card">
+          <h2 className="login-title">ĐĂNG KÝ TÀI KHOẢN</h2>
+
+          {error && <Alert variant="danger" className="py-2 text-center fs-7 mt-2 mb-2">{error}</Alert>}
+          {success && <Alert variant="success" className="py-2 text-center fs-7 mt-2 mb-2">{success}</Alert>}
+
+          <Form onSubmit={handleSubmit} className="mt-2">
+            {/* Tên đăng nhập */}
+            <Form.Group className="mb-3 position-relative">
+              <div className="input-icon-wrapper">
+                <UserOutlined className="input-icon" />
+                <Form.Control
+                  type="text"
+                  name="username"
+                  placeholder="Tên đăng nhập (3 - 50 ký tự)"
+                  value={formData.username}
+                  onChange={handleChange}
+                  className="login-input"
+                  minLength={3}
+                  maxLength={50}
+                  disabled={loading}
+                  required
+                />
+              </div>
+            </Form.Group>
+
+            {/* Mật khẩu */}
+            <Form.Group className="mb-3 position-relative">
+              <div className="input-icon-wrapper">
+                <KeyOutlined className="input-icon" />
+                <Form.Control
+                  type={showPassword ? 'text' : 'password'}
+                  name="password"
+                  placeholder="Mật khẩu (6 - 20 ký tự)"
+                  value={formData.password}
+                  onChange={handleChange}
+                  className="login-input"
+                  minLength={6}
+                  maxLength={20}
+                  disabled={loading}
+                  required
+                />
+                <span 
+                  className="password-toggle-icon"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <EyeInvisibleOutlined /> : <EyeOutlined />}
+                </span>
+              </div>
+            </Form.Group>
+
+            {/* Nhập lại mật khẩu */}
+            <Form.Group className="mb-3 position-relative">
+              <div className="input-icon-wrapper">
+                <KeyOutlined className="input-icon" />
+                <Form.Control
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  name="confirmPassword"
+                  placeholder="Xác nhận lại mật khẩu"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  className="login-input"
+                  disabled={loading}
+                  required
+                />
+                <span 
+                  className="password-toggle-icon"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                >
+                  {showConfirmPassword ? <EyeInvisibleOutlined /> : <EyeOutlined />}
+                </span>
+              </div>
+            </Form.Group>
+
+            {/* Số điện thoại */}
+            <Form.Group className="mb-3 position-relative">
+              <div className="input-icon-wrapper">
+                <PhoneOutlined className="input-icon" />
+                <Form.Control
+                  type="text"
+                  name="phone"
+                  placeholder="Nhập số điện thoại liên hệ"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  className="login-input"
+                  disabled={loading}
+                  required
+                />
+              </div>
+            </Form.Group>
+
+            {/* Vai trò */}
+            <Form.Group className="mb-4 position-relative">
+              <div className="input-icon-wrapper">
+                <SolutionOutlined className="input-icon" />
+                <Form.Select 
+                  name="role" 
+                  value={formData.role} 
+                  onChange={handleChange}
+                  className="login-input"
+                  style={{ paddingLeft: '42px' }}
+                  disabled={loading}
+                >
+                  <option value="Tenant">Người thuê trọ (Tenant)</option>
+                  <option value="Landlord">Chủ cho thuê (Landlord)</option>
+                </Form.Select>
+              </div>
+            </Form.Group>
+
+            <Button type="submit" className="w-100 btn-custom-login mb-3" disabled={loading}>
+              {loading ? (
+                <>
+                  <Spinner animation="border" size="sm" className="me-2" />
+                  Đang xử lý...
+                </>
+              ) : (
+                'ĐĂNG KÝ NGAY'
+              )}
+            </Button>
+
+            <div className="text-center fs-7">
+              Đã có tài khoản?{' '}
+              <span 
+                className="text-primary fw-bold text-decoration-underline" 
+                style={{ cursor: 'pointer' }}
+                onClick={onSwitchToLogin}
+              >
+                Đăng nhập ngay
+              </span>
             </div>
-          </Form.Group>
-
-          {/* Mật khẩu (password) */}
-          <Form.Group className="mb-3">
-            <Form.Label className="small fw-semibold">Mật khẩu</Form.Label>
-            <div className="input-group">
-              <span className="input-group-text"><KeyOutlined /></span>
-              <Form.Control
-                type="password"
-                name="password"
-                placeholder="Từ 6 - 20 ký tự"
-                value={formData.password}
-                onChange={handleChange}
-                minLength={6}
-                maxLength={20}
-                required
-              />
-            </div>
-          </Form.Group>
-
-          {/* Số điện thoại (phone) */}
-          <Form.Group className="mb-3">
-            <Form.Label className="small fw-semibold">Số điện thoại</Form.Label>
-            <div className="input-group">
-              <span className="input-group-text"><PhoneOutlined /></span>
-              <Form.Control
-                type="text"
-                name="phone"
-                placeholder="Nhập số điện thoại"
-                value={formData.phone}
-                onChange={handleChange}
-                required
-              />
-            </div>
-          </Form.Group>
-
-          {/* Vai trò (role) */}
-          <Form.Group className="mb-4">
-            <Form.Label className="small fw-semibold">Bạn là?</Form.Label>
-            <div className="input-group">
-              <span className="input-group-text"><SolutionOutlined /></span>
-              <Form.Select name="role" value={formData.role} onChange={handleChange}>
-                <option value="Tenant">Người thuê trọ (Tenant)</option>
-                <option value="Landlord">Chủ cho thuê (Landlord)</option>
-              </Form.Select>
-            </div>
-          </Form.Group>
-
-          <Button type="submit" className="w-100 btn-primary mb-3" disabled={loading}>
-            {loading ? <Spinner size="sm" animation="border" /> : 'ĐĂNG KÝ'}
-          </Button>
-
-          <div className="text-center small">
-            Đã có tài khoản?{' '}
-            <span 
-              className="text-primary cursor-pointer text-decoration-underline" 
-              style={{ cursor: 'pointer' }}
-              onClick={onSwitchToLogin}
-            >
-              Đăng nhập ngay
-            </span>
-          </div>
-        </Form>
-      </Card>
+          </Form>
+        </div>
+      </div>
     </div>
   );
 };

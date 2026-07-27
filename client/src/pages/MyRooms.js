@@ -1,384 +1,205 @@
-import React, { useState, useEffect } from 'react';
-import { Row, Col, Form as BsForm } from 'react-bootstrap';
-import {
-  Table, Button, Modal, Form, Input, InputNumber, Select, Tag, Space, message, Popconfirm, Card, Upload
-} from 'antd';
-import {
-  PlusOutlined, EditOutlined, DeleteOutlined, PictureOutlined, ToolOutlined, CheckCircleOutlined, UploadOutlined
+// client/src/pages/MyRoom.jsx
+import React, { useEffect, useState } from 'react';
+import { Card, Badge, Button, Container, Row, Col, Spinner, Alert } from 'react-bootstrap';
+import { 
+  HomeOutlined, UserOutlined, PhoneOutlined, 
+  ClockCircleOutlined, CheckCircleOutlined, StopOutlined, FileTextOutlined 
 } from '@ant-design/icons';
-import { roomApi } from './roomApi'; // Import module Axios Client đã viết
+import { useNavigate } from 'react-router-dom';
+import axiosClient from '../api/axiosClient';
 
-const MyRooms = () => {
-  const [rooms, setRooms] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingRoom, setEditingRoom] = useState(null);
+const MyRoom = () => {
+  const navigate = useNavigate();
+  const [contractData, setContractData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  // States cho Quản lý ảnh (F19 & F20)
-  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
-  const [selectedRoomForImages, setSelectedRoomForImages] = useState(null);
-  const [newImageUrl, setNewImageUrl] = useState('');
-
-  const [form] = Form.useForm();
-
-  // 🔄 F11: Lấy danh sách phòng thuộc chủ nhà từ Backend NestJS
-  const fetchMyRooms = async () => {
+  // Tải thông tin Hợp đồng & Phòng đang thuê
+  const fetchMyActiveContract = async () => {
     setLoading(true);
     try {
-      const res = await roomApi.getLandlordRooms();
-      setRooms(res.data || []);
-    } catch (error) {
-      message.error(error.response?.data?.message || 'Không thể tải danh sách phòng trọ!');
+      const res = await axiosClient.get('/contracts/my-active');
+      const data = res.data?.data || res.data || null;
+      setContractData(data);
+    } catch (err) {
+      console.error('Lỗi khi tải thông tin phòng:', err);
+      setError('Khởi tạo dữ liệu thất bại.');
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchMyRooms();
+    fetchMyActiveContract();
   }, []);
 
-  // 🟢 Mở Modal Đăng bài / Chỉnh sửa
-  const handleOpenAddModal = () => {
-    setEditingRoom(null);
-    form.resetFields();
-    setIsModalOpen(true);
-  };
-
-  const handleOpenEditModal = (record) => {
-    setEditingRoom(record);
-    form.setFieldsValue({
-      ...record,
-      price: record.price,
-      area: record.area
-    });
-    setIsModalOpen(true);
-  };
-
-  // 🟢 F10 & F12: Submit Form Thêm/Sửa bài đăng
-  const handleSubmitForm = async (values) => {
+  // Hủy yêu cầu thuê (Khi PENDING)
+  const handleCancelRequest = async (contractId) => {
+    if (!window.confirm('Bạn có chắc chắn muốn HỦY yêu cầu thuê phòng này?')) return;
     try {
-      if (editingRoom) {
-        // F12: Cập nhật thông tin phòng / chuyển trạng thái bảo trì
-        await roomApi.updateRoom(editingRoom.id, values);
-        message.success(`[F12] Cập nhật thông tin phòng #${editingRoom.id} thành công!`);
-      } else {
-        // F10: Đăng bài phòng trọ mới
-        await roomApi.createRoom(values);
-        message.success('[F10] Tạo thành công phòng trọ mới!');
-      }
-      setIsModalOpen(false);
-      fetchMyRooms(); // Refresh lại danh sách
-    } catch (error) {
-      message.error(error.response?.data?.message || 'Thao tác thất bại!');
+      await axiosClient.put(`/contracts/${contractId}/reject`);
+      alert('Đã hủy yêu cầu thuê phòng.');
+      fetchMyActiveContract();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Lỗi khi hủy yêu cầu.');
     }
   };
 
-  // 🔴 F13: Xóa phòng trọ
-  const handleDeleteRoom = async (roomId) => {
-    try {
-      await roomApi.deleteRoom(roomId);
-      message.success(`[F13] Đã xóa bài đăng phòng #${roomId}!`);
-      fetchMyRooms();
-    } catch (error) {
-      message.error('Không thể xóa bài đăng này!');
-    }
-  };
+  if (loading) {
+    return (
+      <div className="text-center py-5">
+        <Spinner animation="border" variant="primary" />
+        <p className="mt-2 text-muted">Đang kiểm tra thông tin phòng trọ của bạn...</p>
+      </div>
+    );
+  }
 
-  // 🖼️ Mở Modal Quản lý bộ sưu tập ảnh
-  const handleOpenImageModal = (room) => {
-    setSelectedRoomForImages(room);
-    setIsImageModalOpen(true);
-  };
-
-  // 🟢 F19: Thêm ảnh bằng URL
-  const handleAddImageByUrl = async () => {
-    if (!newImageUrl.trim()) {
-      message.error('Vui lòng nhập đường dẫn URL hình ảnh!');
-      return;
-    }
-    try {
-      await roomApi.uploadRoomImage(selectedRoomForImages.id, { imageUrl: newImageUrl.trim() });
-      message.success('[F19] Thêm ảnh mới thành công!');
-      setNewImageUrl('');
-      fetchMyRooms();
-      setIsImageModalOpen(false);
-    } catch (error) {
-      message.error('Lỗi khi tải ảnh lên!');
-    }
-  };
-
-  // 🔴 F20: Xóa lẻ ảnh
-  const handleDeleteImage = async (imageId) => {
-    try {
-      await roomApi.deleteRoomImage(selectedRoomForImages.id, imageId);
-      message.success('[F20] Đã xóa ảnh khỏi danh sách!');
-      fetchMyRooms();
-      setIsImageModalOpen(false);
-    } catch (error) {
-      message.error('Xóa ảnh thất bại!');
-    }
-  };
-
-  // Cấu hình Bảng (Table Columns)
-  const columns = [
-    {
-      title: 'Mã & Tiêu đề',
-      dataIndex: 'title',
-      key: 'title',
-      render: (text, record) => (
-        <div>
-          <span style={{ fontWeight: 'bold', color: '#1677ff' }}>#{record.id}</span> - {text}
-          <div style={{ fontSize: '12px', color: '#8c8c8c' }}>📍 {record.addressDetail}, {record.district}</div>
-        </div>
-      )
-    },
-    {
-      title: 'Giá thuê',
-      dataIndex: 'price',
-      key: 'price',
-      render: (price) => <strong style={{ color: '#ff4d4f' }}>{Number(price).toLocaleString()} đ</strong>
-    },
-    {
-      title: 'Diện tích',
-      dataIndex: 'area',
-      key: 'area',
-      render: (area) => `${area} m²`
-    },
-    {
-      title: 'Tiện ích',
-      key: 'amenities',
-      render: (_, record) => (
-        <Space size={[0, 4]} wrap>
-          {record.hasAc && <Tag color="blue">Điều hòa / Wifi</Tag>}
-          {record.hasWm && <Tag color="green">Máy giặt</Tag>}
-        </Space>
-      )
-    },
-    {
-      title: 'Trạng thái',
-      dataIndex: 'status',
-      key: 'status',
-      render: (status) => {
-        if (status === 'AVAILABLE') return <Tag icon={<CheckCircleOutlined />} color="success">Sẵn sàng</Tag>;
-        if (status === 'RENTED') return <Tag color="processing">Đã cho thuê</Tag>;
-        if (status === 'MAINTENANCE') return <Tag icon={<ToolOutlined />} color="warning">Bảo trì</Tag>;
-        return <Tag>{status}</Tag>;
-      }
-    },
-    {
-      title: 'Ảnh bài đăng',
-      key: 'imagesCount',
-      render: (_, record) => (
-        <Button
-          type="dashed"
-          size="small"
-          icon={<PictureOutlined />}
-          onClick={() => handleOpenImageModal(record)}
-        >
-          Quản lý ({record.images?.length || 0})
-        </Button>
-      )
-    },
-    {
-      title: 'Hành động',
-      key: 'action',
-      render: (_, record) => (
-        <Space size="middle">
-          <Button
-            type="text"
-            icon={<EditOutlined style={{ color: '#1677ff' }} />}
-            onClick={() => handleOpenEditModal(record)}
-          >
-            Sửa
-          </Button>
-          <Popconfirm
-            title="Xóa bài đăng phòng"
-            description="Bạn có chắc chắn muốn xóa phòng này không?"
-            onConfirm={() => handleDeleteRoom(record.id)}
-            okText="Xóa"
-            cancelText="Hủy"
-            okButtonProps={{ danger: true }}
-          >
-            <Button type="text" danger icon={<DeleteOutlined />}>
-              Xóa
+  // =========================================================================
+  // TRẠNG THÁI 1: CHƯA ĐĂNG KÝ THUÊ PHÒNG NÀO
+  // =========================================================================
+  if (!contractData) {
+    return (
+      <Container className="py-5 text-center">
+        <Card className="p-5 shadow-sm border-0 bg-light">
+          <HomeOutlined style={{ fontSize: '48px', color: '#94a3b8' }} />
+          <h4 className="mt-3 font-weight-bold">Bạn chưa thuê phòng trọ nào</h4>
+          <p className="text-muted">Hãy khám phá danh sách phòng trọ còn trống và đăng ký thuê ngay hôm nay!</p>
+          <div className="mt-3">
+            <Button variant="primary" size="lg" onClick={() => navigate('/')}>
+              Tìm phòng trọ ngay
             </Button>
-          </Popconfirm>
-        </Space>
-      )
-    }
-  ];
+          </div>
+        </Card>
+      </Container>
+    );
+  }
+
+  const { status, room, landlord } = contractData;
+  const statusUpper = String(status || '').toUpperCase();
 
   return (
-    <div>
-      <Card
-        title={<span style={{ fontSize: '18px', fontWeight: 'bold' }}>🏢 Quản lý danh sách bài đăng phòng trọ</span>}
-        extra={
-          <Button type="primary" icon={<PlusOutlined />} onClick={handleOpenAddModal}>
-            Đăng phòng mới (F10)
-          </Button>
-        }
-        className="shadow-sm border-0"
-      >
-        <Table columns={columns} dataSource={rooms} rowKey="id" loading={loading} pagination={{ pageSize: 5 }} />
-      </Card>
+    <Container className="py-4">
+      {error && <Alert variant="danger">{error}</Alert>}
 
-      {/* 📝 MODAL THÊM MỚI (F10) HOẶC CẬP NHẬT (F12) */}
-      <Modal
-        title={editingRoom ? `✏️ F12: Chỉnh sửa phòng #${editingRoom.id}` : '➕ F10: Đăng bài phòng trọ mới'}
-        open={isModalOpen}
-        onCancel={() => setIsModalOpen(false)}
-        footer={null}
-        destroyOnClose
-      >
-        <Form form={form} layout="vertical" onFinish={handleSubmitForm}>
-          <Form.Item
-            label="Tiêu đề bài đăng"
-            name="title"
-            rules={[{ required: true, message: 'Vui lòng nhập tiêu đề phòng!' }]}
-          >
-            <Input placeholder="Ví dụ: Studio Lê Đức Thọ Full Nội Thất" />
-          </Form.Item>
-
-          <Row className="g-2">
-            <Col md={6}>
-              <Form.Item
-                label="Quận / Huyện"
-                name="district"
-                rules={[{ required: true, message: 'Nhập Quận/Huyện!' }]}
-              >
-                <Input placeholder="Ví dụ: Nam Từ Liêm" />
-              </Form.Item>
-            </Col>
-            <Col md={6}>
-              <Form.Item
-                label="Địa chỉ chi tiết"
-                name="addressDetail"
-                rules={[{ required: true, message: 'Nhập địa chỉ!' }]}
-              >
-                <Input placeholder="Ví dụ: 121 Lê Đức Thọ" />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row className="g-2">
-            <Col md={6}>
-              <Form.Item
-                label="Giá thuê (đ/tháng)"
-                name="price"
-                rules={[
-                  { required: true, message: 'Nhập giá thuê!' },
-                  { type: 'number', min: 1, message: 'Giá phải lớn hơn 0!' }
-                ]}
-              >
-                <InputNumber style={{ width: '100%' }} placeholder="4500000" />
-              </Form.Item>
-            </Col>
-            <Col md={6}>
-              <Form.Item
-                label="Diện tích (m²)"
-                name="area"
-                rules={[
-                  { required: true, message: 'Nhập diện tích!' },
-                  { type: 'number', min: 1, message: 'Diện tích phải lớn hơn 0!' }
-                ]}
-              >
-                <InputNumber style={{ width: '100%' }} placeholder="28" />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          {editingRoom && (
-            <Form.Item label="Trạng thái phòng" name="status">
-              <Select options={[
-                { value: 'AVAILABLE', label: '🟢 Sẵn sàng (Available)' },
-                { value: 'RENTED', label: '🔵 Đã cho thuê (Rented)' },
-                { value: 'MAINTENANCE', label: '🟡 Đang bảo trì (Maintenance)' }
-              ]} />
-            </Form.Item>
-          )}
-
-          {!editingRoom && (
-            <Form.Item label="URL Ảnh đại diện ban đầu" name="firstImageUrl">
-              <Input placeholder="Dán đường dẫn link ảnh từ Cloudinary/Internet..." />
-            </Form.Item>
-          )}
-
-          <Row className="g-2">
-            <Col md={6}>
-              <Form.Item name="hasAc" valuePropName="checked">
-                <BsForm.Check type="checkbox" id="ac-modal" label="Có Điều hòa / Wifi" />
-              </Form.Item>
-            </Col>
-            <Col md={6}>
-              <Form.Item name="hasWm" valuePropName="checked">
-                <BsForm.Check type="checkbox" id="wm-modal" label="Có Máy giặt" />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Form.Item label="Mô tả chi tiết" name="description">
-            <Input.TextArea rows={3} placeholder="Mô tả về giờ giấc, tiện ích xung quanh..." />
-          </Form.Item>
-
-          <div className="d-flex justify-content-end gap-2 mt-3">
-            <Button onClick={() => setIsModalOpen(false)}>Hủy</Button>
-            <Button type="primary" htmlType="submit">
-              {editingRoom ? 'Lưu cập nhật (F12)' : 'Tạo bài đăng (F10)'}
-            </Button>
-          </div>
-        </Form>
-      </Modal>
-
-      {/* 🖼️ MODAL QUẢN LÝ ÁNH BÀI ĐĂNG (F19 & F20) */}
-      <Modal
-        title={`🖼️ Quản lý ảnh bài đăng - #${selectedRoomForImages?.id}`}
-        open={isImageModalOpen}
-        onCancel={() => setIsImageModalOpen(false)}
-        footer={null}
-      >
-        {/* F19: Thêm ảnh mới */}
-        <div className="mb-3 p-3 bg-light rounded">
-          <h6 className="fw-bold">F19: Thêm ảnh phòng mới (Image URL)</h6>
-          <div className="d-flex gap-2">
-            <Input
-              placeholder="Dán URL ảnh từ Cloudinary..."
-              value={newImageUrl}
-              onChange={(e) => setNewImageUrl(e.target.value)}
-            />
-            <Button type="primary" icon={<PlusOutlined />} onClick={handleAddImageByUrl}>
-              Thêm
-            </Button>
-          </div>
-        </div>
-
-        {/* F20: Danh sách ảnh hiện tại & Xóa */}
-        <h6 className="fw-bold">F20: Danh sách ảnh hiện tại ({selectedRoomForImages?.images?.length || 0})</h6>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginTop: 10 }}>
-          {selectedRoomForImages?.images?.map((img) => (
-            <div key={img.id} style={{ position: 'relative', border: '1px solid #d9d9d9', borderRadius: 6, overflow: 'hidden' }}>
-              <img src={img.url} alt="Room" style={{ width: '100%', height: 90, objectFit: 'cover' }} />
-              <Popconfirm
-                title="Xóa ảnh này?"
-                onConfirm={() => handleDeleteImage(img.id)}
-                okText="Xóa"
-                cancelText="Hủy"
-                okButtonProps={{ danger: true }}
-              >
-                <Button
-                  shape="circle"
-                  danger
-                  size="small"
-                  icon={<DeleteOutlined />}
-                  style={{ position: 'absolute', top: 4, right: 4 }}
-                />
-              </Popconfirm>
+      {/* ========================================================================= */}
+      {/* TRẠNG THÁI 2: ĐÃ GỬI YÊU CẦU - CHỜ CHỦ NHÀ DUYỆT (PENDING) */}
+      {/* ========================================================================= */}
+      {statusUpper === 'PENDING' && (
+        <Card className="shadow-sm border-0 border-top border-warning border-4">
+          <Card.Body className="p-4">
+            <div className="d-flex align-items-center mb-3">
+              <ClockCircleOutlined style={{ fontSize: '28px', color: '#f59e0b', marginRight: '12px' }} />
+              <div>
+                <h5 className="mb-0 font-weight-bold">Yêu cầu thuê phòng đang chờ phê duyệt</h5>
+                <small className="text-muted">Mã yêu cầu: #{contractData.id}</small>
+              </div>
+              <Badge bg="warning" className="ms-auto fs-6 text-dark">Chờ duyệt</Badge>
             </div>
-          ))}
-        </div>
-      </Modal>
-    </div>
+
+            <Alert variant="warning" className="mb-4">
+              Yêu cầu thuê của bạn đã được gửi tới Chủ nhà. Vui lòng chờ phản hồi hoặc liên hệ trực tiếp với chủ nhà theo thông tin bên dưới.
+            </Alert>
+
+            <Row className="g-3">
+              <Col md={6}>
+                <Card className="bg-light border-0 p-3">
+                  <h6 className="fw-bold text-primary mb-2"><HomeOutlined /> Thông tin phòng trọ đăng ký</h6>
+                  <p className="mb-1"><strong>Tiêu đề:</strong> {room?.title || 'Phòng trọ'}</p>
+                  <p className="mb-1"><strong>Địa chỉ:</strong> {room?.addressDetail || room?.district}</p>
+                  <p className="mb-0"><strong>Giá thuê đề xuất:</strong> <span className="text-danger fw-bold">{Number(contractData.price || room?.price || 0).toLocaleString('vi-VN')} đ/tháng</span></p>
+                </Card>
+              </Col>
+
+              <Col md={6}>
+                <Card className="bg-light border-0 p-3">
+                  <h6 className="fw-bold text-success mb-2"><UserOutlined /> Thông tin Chủ nhà</h6>
+                  <p className="mb-1"><strong>Chủ nhà:</strong> {landlord?.username || room?.landlord?.username || 'Chưa cập nhật'}</p>
+                  <p className="mb-0"><strong>SĐT liên hệ:</strong> <PhoneOutlined /> {landlord?.phone || room?.landlord?.phone || 'Chưa cập nhật'}</p>
+                </Card>
+              </Col>
+            </Row>
+
+            <div className="mt-4 text-end">
+              <Button variant="outline-danger" onClick={() => handleCancelRequest(contractData.id)}>
+                <StopOutlined /> Hủy yêu cầu thuê
+              </Button>
+            </div>
+          </Card.Body>
+        </Card>
+      )}
+
+      {/* ========================================================================= */}
+      {/* TRẠNG THÁI 3: CHỦ NHÀ ĐÃ DUYỆT - ĐANG THUÊ CHÍNH THỨC (ACTIVE) */}
+      {/* ========================================================================= */}
+      {statusUpper === 'ACTIVE' && (
+        <Card className="shadow-sm border-0 border-top border-success border-4">
+          <Card.Header className="bg-white py-3 d-flex justify-content-between align-items-center">
+            <div>
+              <h5 className="mb-0 font-weight-bold text-success">
+                <CheckCircleOutlined className="me-2" /> Phòng trọ đang thuê
+              </h5>
+              <small className="text-muted">Hợp đồng có hiệu lực • Mã HĐ: #{contractData.id}</small>
+            </div>
+            <Badge bg="success" className="fs-6">Đang hiệu lực</Badge>
+          </Card.Header>
+
+          <Card.Body className="p-4">
+            <Row className="g-4">
+              {/* Cột trái: Thông tin phòng trọ */}
+              <Col md={7}>
+                <h6 className="fw-bold text-dark border-bottom pb-2">Chi tiết không gian ở</h6>
+                <h4 className="fw-bold text-primary mb-2">{room?.title}</h4>
+                <p className="text-muted mb-3"><HomeOutlined /> Địa chỉ: {room?.addressDetail}, {room?.district}</p>
+
+                <Row className="mb-3 text-center g-2">
+                  <Col xs={4}>
+                    <div className="p-2 border rounded bg-light">
+                      <small className="text-muted d-block">Giá thuê</small>
+                      <strong className="text-danger">{Number(contractData.price || room?.price || 0).toLocaleString('vi-VN')} đ</strong>
+                    </div>
+                  </Col>
+                  <Col xs={4}>
+                    <div className="p-2 border rounded bg-light">
+                      <small className="text-muted d-block">Diện tích</small>
+                      <strong>{room?.area || '--'} m²</strong>
+                    </div>
+                  </Col>
+                  <Col xs={4}>
+                    <div className="p-2 border rounded bg-light">
+                      <small className="text-muted d-block">Trạng thái</small>
+                      <strong className="text-success">Đã bàn giao</strong>
+                    </div>
+                  </Col>
+                </Row>
+
+                {room?.description && (
+                  <div className="p-3 bg-light rounded">
+                    <small className="fw-bold text-muted d-block mb-1">Mô tả / Nội quy phòng:</small>
+                    <p className="small mb-0 text-secondary">{room.description}</p>
+                  </div>
+                )}
+              </Col>
+
+              {/* Cột phải: Thông tin Chủ nhà & Điều khoản */}
+              <Col md={5}>
+                <div className="p-3 border rounded mb-3 bg-light">
+                  <h6 className="fw-bold text-dark mb-3"><UserOutlined /> Thông tin chủ cho thuê</h6>
+                  <p className="mb-2"><strong>Họ tên:</strong> {landlord?.username || room?.landlord?.username || 'Chủ nhà'}</p>
+                  <p className="mb-2"><strong>Số điện thoại:</strong> {landlord?.phone || room?.landlord?.phone || 'Chưa cập nhật'}</p>
+                  <p className="mb-0"><strong>Email:</strong> {landlord?.email || room?.landlord?.email || 'N/A'}</p>
+                </div>
+
+                <div className="p-3 border rounded bg-light">
+                  <h6 className="fw-bold text-dark mb-2"><FileTextOutlined /> Thời hạn hợp đồng</h6>
+                  <p className="small text-muted mb-0">Hợp đồng bắt đầu từ ngày phê duyệt. Để trả phòng hoặc chấm dứt hợp đồng sớm, vui lòng liên hệ trực tiếp với Chủ nhà.</p>
+                </div>
+              </Col>
+            </Row>
+          </Card.Body>
+        </Card>
+      )}
+    </Container>
   );
 };
 
-export default MyRooms;
+export default MyRoom;
