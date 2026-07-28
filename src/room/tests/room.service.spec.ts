@@ -1,250 +1,340 @@
-// import { Test, TestingModule } from "@nestjs/testing";
-// import { RoomService } from "../room.service";
-// import { getRepositoryToken } from "@nestjs/typeorm";
-// import { Room } from "../room.entity";
-// import { NotFoundException, ForbiddenException } from "@nestjs/common";
-// import { describe, beforeEach, it, expect, jest } from "@jest/globals";
+import { Test, TestingModule } from '@nestjs/testing';
+import { getRepositoryToken } from '@nestjs/typeorm';
+import { NotFoundException, ForbiddenException } from '@nestjs/common';
 
-// describe("RoomService (Zone 1 - Chức năng của Kiên)", () => {
-//   let service: RoomService;
-//   let mockRoomRepository: any;
+import { RoomService } from '../room.service';
+import { Room } from '../room.entity';
+import { RoomImage } from '../room-image.entity';
+import { Contract, ContractStatus } from '../../contract/contract.entity';
+import { Favourite } from '../../favourite/favourite.entity';
 
-//   // Khởi tạo Factory giả lập các hàm cơ bản của TypeORM Repository
-//   // Sử dụng Arrow Function để bypass hoàn toàn lỗi gán kiểu 'never' của Jest
-//   const mockRoomRepositoryFactory = () => ({
-//     create: jest.fn((dto: any) => dto),
-//     save: jest.fn((room: any) => 
-//       Promise.resolve({ id: 1, ...room })
-//     ),
-//     find: jest.fn(() => 
-//       Promise.resolve([])
-//     ),
-//     findOne: jest.fn(() => 
-//       Promise.resolve(null)
-//     ),
-//     update: jest.fn(() => 
-//       Promise.resolve({ affected: 1 })
-//     ),
-//     delete: jest.fn(() => 
-//       Promise.resolve({ affected: 1 })
-//     ),
-//   });
+describe('RoomService', () => {
+  let service: RoomService;
+  let mockRoomRepository: any;
+  let mockContractRepository: any;
+  let mockFavouriteRepository: any;
 
-//   beforeEach(async () => {
-//     const module: TestingModule = await Test.createTestingModule({
-//       providers: [
-//         RoomService,
-//         {
-//           provide: getRepositoryToken(Room),
-//           useFactory: mockRoomRepositoryFactory,
-//         },
-//       ],
-//     }).compile();
+  // Mock QueryBuilder cho TypeORM
+  const mockQueryBuilder = {
+    leftJoinAndSelect: jest.fn().mockReturnThis(),
+    leftJoin: jest.fn().mockReturnThis(),
+    addSelect: jest.fn().mockReturnThis(),
+    where: jest.fn().mockReturnThis(),
+    andWhere: jest.fn().mockReturnThis(),
+    orderBy: jest.fn().mockReturnThis(),
+    getOne: jest.fn(),
+    getMany: jest.fn(),
+  };
 
-//     service = module.get<RoomService>(RoomService);
-//     mockRoomRepository = module.get(getRepositoryToken(Room));
-//   });
+  const mockRoomRepositoryFactory = () => ({
+    create: jest.fn((dto) => dto),
+    save: jest.fn((room) => Promise.resolve({ id: 1, ...room })),
+    find: jest.fn().mockResolvedValue([]),
+    findOne: jest.fn().mockResolvedValue(null),
+    update: jest.fn().mockResolvedValue({ affected: 1 }),
+    remove: jest.fn((room) => Promise.resolve(room)),
+    createQueryBuilder: jest.fn(() => mockQueryBuilder),
+    manager: {
+      getRepository: jest.fn(),
+    },
+  });
 
-//   it("should be defined", () => {
-//     expect(service).toBeDefined();
-//   });
+  const mockContractRepositoryFactory = () => ({
+    findOne: jest.fn().mockResolvedValue(null),
+    delete: jest.fn().mockResolvedValue({ affected: 1 }),
+  });
 
-//   // =========================================================================
-//   // [ZONE 1] TEST CHỨC NĂNG CỦA TV1 (KIÊN)
-//   // Các hàm kiểm thử: create (F10), findMyRooms (F11), update (F12), remove (F13)
-//   // =========================================================================
-//   describe("Chức năng Quản lý Phòng của Landlord", () => {
-    
-//     // Test F10: Đăng phòng mới
-//     describe("create (F10)", () => {
-//       it("nên đăng ký phòng mới thành công với trạng thái mặc định là Available", async () => {
-//         const roomData = {
-//           title: "Phòng trọ giá rẻ",
-//           price: 2500000,
-//           area: 25.5,
-//           district: "Cầu Giấy",
-//           addressDetail: "Số 12 Ngõ 34 Cầu Giấy",
-//         };
-//         const landlordId = 24100323;
+  const mockFavouriteRepositoryFactory = () => ({
+    delete: jest.fn().mockResolvedValue({ affected: 1 }),
+  });
 
-//         const result = await service.create(landlordId, roomData);
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        RoomService,
+        {
+          provide: getRepositoryToken(Room),
+          useFactory: mockRoomRepositoryFactory,
+        },
+        {
+          provide: getRepositoryToken(Contract),
+          useFactory: mockContractRepositoryFactory,
+        },
+        {
+          provide: getRepositoryToken(Favourite),
+          useFactory: mockFavouriteRepositoryFactory,
+        },
+      ],
+    }).compile();
 
-//         expect(result).toBeDefined();
-//         expect(result.landlordId).toEqual(landlordId);
-//         expect(result.status).toEqual("Available");
-//         expect(mockRoomRepository.save).toHaveBeenCalled();
-//       });
-//     });
+    service = module.get<RoomService>(RoomService);
+    mockRoomRepository = module.get(getRepositoryToken(Room));
+    mockContractRepository = module.get(getRepositoryToken(Contract));
+    mockFavouriteRepository = module.get(getRepositoryToken(Favourite));
+  });
 
-//     // Test F11: Lấy danh sách phòng của tôi
-//     describe("findMyRooms (F11)", () => {
-//       it("nên trả về danh sách phòng thuộc sở hữu của riêng chủ nhà đăng nhập", async () => {
-//         const landlordId = 24100323;
-//         const mockRooms = [
-//           { id: 1, title: "Phòng 1", landlordId },
-//           { id: 2, title: "Phòng 2", landlordId },
-//         ];
-//         mockRoomRepository.find.mockImplementation(() => Promise.resolve(mockRooms));
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
 
-//         const result = await service.findMyRooms(landlordId);
+  it('should be defined', () => {
+    expect(service).toBeDefined();
+  });
 
-//         expect(result).toHaveLength(2);
-//         expect(result[0].landlordId).toEqual(landlordId);
-//       });
-//     });
+  // =========================================================================
+  // [ZONE 1] CHỨC NĂNG CỦA LANDLORD (F10, F11, F12, F13)
+  // =========================================================================
+  describe('Landlord Management Zone', () => {
+    // F10: Create Room
+    describe('create (F10)', () => {
+      it('nên tạo phòng mới thành công với landlordId kiểu number', async () => {
+        const roomDto = { title: 'Phòng trọ cao cấp', price: 3000000 } as any;
+        const landlordId = 24100323;
 
-//     // Test F12: Sửa thông tin phòng / Bảo trì
-//     describe("update (F12)", () => {
-//       const landlordId = 24100323;
-//       const roomId = 1;
-//       const mockExistingRoom = { id: roomId, title: "Phòng cũ", landlordId };
+        const result = await service.create(roomDto, landlordId);
 
-//       it("nên cho phép cập nhật nếu đúng chính chủ nhà sở hữu phòng", async () => {
-//         mockRoomRepository.findOne.mockImplementation(() => Promise.resolve(mockExistingRoom));
-//         const updateData = { title: "Phòng đã sửa tiêu đề", status: "Maintenance" };
+        expect(mockRoomRepository.create).toHaveBeenCalledWith({
+          ...roomDto,
+          landlordId,
+        });
+        expect(mockRoomRepository.save).toHaveBeenCalled();
+        expect(result.landlordId).toBe(landlordId);
+      });
+    });
 
-//         const result = await service.update(roomId, landlordId, updateData);
+    // F11: Find My Rooms
+    describe('findMyRooms (F11)', () => {
+      it('nên trả về danh sách phòng thuộc sở hữu của landlord', async () => {
+        const landlordId = 24100323;
+        const mockRooms = [{ id: 1, title: 'Phòng 1', landlordId }];
+        mockRoomRepository.find.mockResolvedValue(mockRooms);
 
-//         expect(mockRoomRepository.update).toHaveBeenCalledWith(roomId, updateData);
-//         expect(result).toBeDefined();
-//       });
+        const result = await service.findMyRooms(landlordId);
 
-//       it("nên ném lỗi NotFoundException nếu phòng không tồn tại", async () => {
-//         mockRoomRepository.findOne.mockImplementation(() => Promise.resolve(null));
-        
-//         await expect(service.update(99, landlordId, { title: "Test" })).rejects.toThrow(NotFoundException);
-//       });
+        expect(mockRoomRepository.find).toHaveBeenCalledWith({
+          where: { landlordId },
+          order: { createdAt: 'DESC' },
+        });
+        expect(result).toEqual(mockRooms);
+      });
+    });
 
-//       it("nên ném lỗi ForbiddenException nếu chủ nhà khác cố tình sửa phòng không thuộc sở hữu", async () => {
-//         mockRoomRepository.findOne.mockImplementation(() => Promise.resolve(mockExistingRoom));
-//         const hackerLandlordId = 999999; // ID chủ nhà khác bẻ khóa URL
+    // F12: Update Room
+    describe('update (F12)', () => {
+      const landlordId = 24100323;
+      const roomId = 1;
+      const existingRoom = { id: roomId, landlordId, title: 'Cũ' };
 
-//         await expect(
-//           service.update(roomId, hackerLandlordId, { title: "Hack tiêu đề" })
-//         ).rejects.toThrow(ForbiddenException);
-//       });
-//     });
+      it('nên cho phép cập nhật khi đúng chủ sở hữu', async () => {
+        mockRoomRepository.findOne
+          .mockResolvedValueOnce(existingRoom)
+          .mockResolvedValueOnce({ ...existingRoom, title: 'Mới' });
 
-//     // Test F13: Xóa bài đăng phòng trọ
-//     describe("remove (F13)", () => {
-//       const landlordId = 24100323;
-//       const roomId = 1;
-//       const mockExistingRoom = { id: roomId, title: "Phòng cần xóa", landlordId };
+        const result = await service.update(roomId, landlordId, { title: 'Mới' });
 
-//       it("Chính chủ yêu cầu xóa phòng trọ -> Thành công", async () => {
-//         mockRoomRepository.findOne.mockImplementation(() => Promise.resolve(mockExistingRoom));
+        expect(mockRoomRepository.update).toHaveBeenCalledWith(roomId, { title: 'Mới' });
+        expect(result.title).toBe('Mới');
+      });
 
-//         const result = await service.remove(roomId, landlordId);
+      it('nên ném NotFoundException nếu phòng không tồn tại', async () => {
+        mockRoomRepository.findOne.mockResolvedValue(null);
 
-//         expect(mockRoomRepository.delete).toHaveBeenCalledWith(roomId);
-//         expect(result.message).toContain("Xóa thành công phòng trọ");
-//       });
+        await expect(service.update(99, landlordId, {})).rejects.toThrow(NotFoundException);
+      });
 
-//       it("Chủ nhà khác cố tình xóa phòng -> Thất bại, ném lỗi ForbiddenException", async () => {
-//         mockRoomRepository.findOne.mockImplementation(() => Promise.resolve(mockExistingRoom));
-//         const hackerLandlordId = 999999;
+      it('nên ném ForbiddenException nếu không phải chính chủ', async () => {
+        mockRoomRepository.findOne.mockResolvedValue({ id: roomId, landlordId: 999 });
 
-//         await expect(service.remove(roomId, hackerLandlordId)).rejects.toThrow(ForbiddenException);
-//       });
-//     });
-//   });
+        await expect(service.update(roomId, landlordId, {})).rejects.toThrow(ForbiddenException);
+      });
+    });
 
-//   // =========================================================================
-//   // [ZONE 2] KHU VỰC CỦA TV2
-//   //  TV2 viết tiếp các ca kiểm thử cho chức năng tra cứu/ảnh ở dưới này
-//   // =========================================================================
-//   // =========================================================================
-//   // [ZONE 2] KHU VỰC CỦA TV2
-//   // Các ca kiểm thử cho F04, F05, F06, F19, F20
-//   // =========================================================================
-//   describe("Chức năng Tìm kiếm & Quản lý Ảnh (TV2)", () => {
+    // F13: Remove Room
+    describe('remove (F13)', () => {
+      const landlordId = 24100323;
+      const roomId = 1;
+      const existingRoom = { id: roomId, landlordId, title: 'Phòng cần xóa' };
 
-//     // Test F04: Lấy danh sách phòng trống
-//     describe("findAllAvailable (F04)", () => {
-//       it("nên trả về danh sách các phòng trọ có status là Available", async () => {
-//         const mockAvailableRooms = [{ id: 1, title: "Phòng trống", status: "Available" }];
-//         mockRoomRepository.find.mockImplementation(() => Promise.resolve(mockAvailableRooms));
+      it('nên xóa hợp đồng, lượt yêu thích và bài đăng phòng khi đúng chủ sở hữu', async () => {
+        mockRoomRepository.findOne.mockResolvedValue(existingRoom);
 
-//         const result = await service.findAllAvailable();
+        await service.remove(roomId, landlordId);
 
-//         expect(result).toHaveLength(1);
-//         expect(result[0].status).toBe("Available");
-//         expect(mockRoomRepository.find).toHaveBeenCalledWith(
-//           expect.objectContaining({ where: { status: "Available" } })
-//         );
-//       });
-//     });
+        expect(mockContractRepository.delete).toHaveBeenCalledWith({ roomId });
+        expect(mockFavouriteRepository.delete).toHaveBeenCalledWith({ roomId });
+        expect(mockRoomRepository.remove).toHaveBeenCalledWith(existingRoom);
+      });
 
-//     // Test F19: Thêm ảnh cho phòng trọ
-//     describe("addRoomImage (F19)", () => {
-//       const landlordId = 24100323;
-//       const roomId = 1;
-//       const mockExistingRoom = { id: roomId, title: "Phòng của tôi", landlordId };
+      it('nên ném NotFoundException nếu phòng không tồn tại hoặc không chính chủ', async () => {
+        mockRoomRepository.findOne.mockResolvedValue(null);
 
-//       it("nên thêm ảnh thành công khi chính chủ phòng thao tác", async () => {
-//         mockRoomRepository.findOne.mockImplementation(() => Promise.resolve(mockExistingRoom));
+        await expect(service.remove(roomId, landlordId)).rejects.toThrow(NotFoundException);
+      });
+    });
+  });
 
-//         const mockSavedImage = { id: 10, roomId, imageUrl: "http://cloudinary.com/test.jpg" };
-//         mockRoomRepository.manager = {
-//           getRepository: jest.fn().mockReturnValue({
-//             create: jest.fn((dto: any) => dto),
-//             save: jest.fn((img: any) => Promise.resolve({ id: 10, ...img })),
-//           }),
-//         } as any;
+  // =========================================================================
+  // [ZONE 2] CHỨC NĂNG TRA CỨU, BỘ LỌC VÀ ẢNH (F04, F05, F06, F19, F20, TENANT ROOM)
+  // =========================================================================
+  describe('Search & Image Zone', () => {
+    // F04: Find All Available
+    describe('findAllAvailable (F04)', () => {
+      it('nên trả về danh sách phòng có status là Available', async () => {
+        const mockRooms = [{ id: 1, status: 'Available' }];
+        mockRoomRepository.find.mockResolvedValue(mockRooms);
 
-//         const result = await service.addRoomImage(roomId, landlordId, "http://cloudinary.com/test.jpg");
+        const result = await service.findAllAvailable();
 
-//         expect(result).toBeDefined();
-//         expect(result.imageUrl).toBe("http://cloudinary.com/test.jpg");
-//       });
+        expect(mockRoomRepository.find).toHaveBeenCalledWith({
+          where: { status: 'Available' },
+          relations: ['images'],
+          order: { createdAt: 'DESC' },
+        });
+        expect(result).toEqual(mockRooms);
+      });
+    });
 
-//       it("nên ném lỗi ForbiddenException nếu chủ nhà khác cố tình tải ảnh lên phòng không thuộc về mình", async () => {
-//         mockRoomRepository.findOne.mockImplementation(() => Promise.resolve(mockExistingRoom));
-//         const hackerLandlordId = 999999;
+    // Find Active Room By Tenant ID
+    describe('findActiveRoomByTenantId', () => {
+      it('nên trả về null nếu tenant không có hợp đồng active', async () => {
+        mockContractRepository.findOne.mockResolvedValue(null);
 
-//         await expect(
-//           service.addRoomImage(roomId, hackerLandlordId, "http://cloudinary.com/test.jpg")
-//         ).rejects.toThrow(ForbiddenException);
-//       });
-//     });
+        const result = await service.findActiveRoomByTenantId(10);
 
-//     // Test F20: Xóa ảnh lẻ của phòng trọ
-//     describe("deleteRoomImage (F20)", () => {
-//       const landlordId = 24100323;
-//       const roomId = 1;
-//       const imageId = 10;
-//       const mockExistingRoom = { id: roomId, title: "Phòng của tôi", landlordId };
+        expect(result).toBeNull();
+      });
 
-//       it("nên xóa ảnh thành công khi ảnh tồn tại và đúng chính chủ", async () => {
-//         mockRoomRepository.findOne.mockImplementation(() => Promise.resolve(mockExistingRoom));
+      it('nên trả về dữ liệu phòng đã được phẳng hóa với hợp đồng', async () => {
+        const activeContract = {
+          id: 5,
+          roomId: 1,
+          tenantId: 10,
+          status: ContractStatus.ACTIVE,
+          startDate: new Date(),
+          endDate: new Date(),
+          price: 2000000,
+        };
+        const mockRoom = { id: 1, title: 'Phòng 1', price: 2500000 };
 
-//         const mockImage = { id: imageId, roomId, imageUrl: "http://cloudinary.com/test.jpg" };
-//         mockRoomRepository.manager = {
-//           getRepository: jest.fn().mockReturnValue({
-//             findOne: jest.fn<any>().mockImplementation(() => Promise.resolve(mockImage)),
-//             delete: jest.fn<any>().mockImplementation(() => Promise.resolve({ affected: 1 })),
-//           }),
-//         } as any;
+        mockContractRepository.findOne.mockResolvedValue(activeContract);
+        mockRoomRepository.findOne.mockResolvedValue(mockRoom);
 
-//         const result = await service.deleteRoomImage(roomId, imageId, landlordId);
+        const result = await service.findActiveRoomByTenantId(10);
 
-//         expect(result.message).toContain(`Xóa thành công ảnh có ID ${imageId}`);
-//       });
+        expect(result).toEqual({
+          ...mockRoom,
+          contractId: activeContract.id,
+          startDate: activeContract.startDate,
+          endDate: activeContract.endDate,
+          monthlyPrice: activeContract.price,
+        });
+      });
+    });
 
-//       it("nên ném lỗi NotFoundException khi ảnh không tồn tại", async () => {
-//         mockRoomRepository.findOne.mockImplementation(() => Promise.resolve(mockExistingRoom));
+    // F05: Find One Detail
+    describe('findOneDetail (F05)', () => {
+      it('nên trả về chi tiết phòng khi tìm thấy', async () => {
+        const mockRoom = { id: 1, title: 'Phòng 1' };
+        mockQueryBuilder.getOne.mockResolvedValue(mockRoom);
 
-//         mockRoomRepository.manager = {
-//           getRepository: jest.fn().mockReturnValue({
-//             findOne: jest.fn<any>().mockImplementation(() => Promise.resolve(null)),
-//           }),
-//         } as any;
+        const result = await service.findOneDetail(1);
 
-//         await expect(
-//           service.deleteRoomImage(roomId, 999, landlordId)
-//         ).rejects.toThrow(NotFoundException);
-//       });
-//     });
+        expect(result).toEqual(mockRoom);
+      });
 
-//   }); 
-// }); 
+      it('nên ném NotFoundException nếu không tìm thấy phòng', async () => {
+        mockQueryBuilder.getOne.mockResolvedValue(null);
+
+        await expect(service.findOneDetail(99)).rejects.toThrow(NotFoundException);
+      });
+    });
+
+    // F06: Search Rooms
+    describe('searchRooms (F06)', () => {
+      it('nên áp dụng đúng bộ lọc tìm kiếm', async () => {
+        const mockRooms = [{ id: 1, district: 'Cầu Giấy', price: 3000000 }];
+        mockQueryBuilder.getMany.mockResolvedValue(mockRooms);
+
+        const filters = {
+          district: 'Cầu Giấy',
+          minPrice: 1000000,
+          maxPrice: 5000000,
+          hasAc: true,
+        };
+
+        const result = await service.searchRooms(filters);
+
+        expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+          'room.district LIKE :district',
+          { district: '%Cầu Giấy%' },
+        );
+        expect(result).toEqual(mockRooms);
+      });
+    });
+
+    // F19: Add Room Image
+    describe('addRoomImage (F19)', () => {
+      const landlordId = 24100323;
+      const roomId = 1;
+
+      it('nên thêm ảnh thành công khi chính chủ thao tác', async () => {
+        mockRoomRepository.findOne.mockResolvedValue({ id: roomId, landlordId });
+
+        const mockImageRepo = {
+          create: jest.fn((dto) => dto),
+          save: jest.fn((dto) => Promise.resolve({ id: 10, ...dto })),
+        };
+        mockRoomRepository.manager.getRepository.mockReturnValue(mockImageRepo);
+
+        const result = await service.addRoomImage(
+          roomId,
+          landlordId,
+          'http://image.url',
+          'public_123',
+        );
+
+        expect(result).toEqual({
+          id: 10,
+          roomId,
+          imageUrl: 'http://image.url',
+          publicId: 'public_123',
+        });
+      });
+    });
+
+    // F20: Delete Room Image
+    describe('deleteRoomImage (F20)', () => {
+      const landlordId = 24100323;
+      const roomId = 1;
+      const imageId = 10;
+
+      it('nên xóa ảnh thành công khi ảnh tồn tại', async () => {
+        mockRoomRepository.findOne.mockResolvedValue({ id: roomId, landlordId });
+
+        const mockImageRepo = {
+          findOne: jest.fn().mockResolvedValue({ id: imageId, roomId }),
+          delete: jest.fn().mockResolvedValue({ affected: 1 }),
+        };
+        mockRoomRepository.manager.getRepository.mockReturnValue(mockImageRepo);
+
+        const result = await service.deleteRoomImage(roomId, imageId, landlordId);
+
+        expect(result.message).toContain(`Xóa thành công ảnh có ID ${imageId}`);
+        expect(mockImageRepo.delete).toHaveBeenCalledWith(imageId);
+      });
+
+      it('nên ném NotFoundException nếu không tìm thấy ảnh', async () => {
+        mockRoomRepository.findOne.mockResolvedValue({ id: roomId, landlordId });
+
+        const mockImageRepo = {
+          findOne: jest.fn().mockResolvedValue(null),
+        };
+        mockRoomRepository.manager.getRepository.mockReturnValue(mockImageRepo);
+
+        await expect(
+          service.deleteRoomImage(roomId, 999, landlordId),
+        ).rejects.toThrow(NotFoundException);
+      });
+    });
+  });
+});
