@@ -3,8 +3,8 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ReportService } from './report.service';
 import { Room } from '../room/room.entity';
-import { Contract } from '../contract/contract.entity';
-import { User } from '../user/user.entity'; // Import thêm User Entity cho Admin report
+import { Contract, ContractStatus } from '../contract/contract.entity';
+import { User } from '../user/user.entity';
 
 describe('ReportService', () => {
   let service: ReportService;
@@ -70,6 +70,10 @@ describe('ReportService', () => {
     jest.clearAllMocks();
   });
 
+  it('should be defined', () => {
+    expect(service).toBeDefined();
+  });
+
   // ==========================================
   // 1. TEST SUITE DÀNH CHO LANDLORD REPORT
   // ==========================================
@@ -78,7 +82,7 @@ describe('ReportService', () => {
       const landlordId = 1;
 
       mockRoomQueryBuilder.getRawOne
-        .mockResolvedValueOnce({ count: '5' })  // Tổng số phòng
+        .mockResolvedValueOnce({ count: '5' }) // Tổng số phòng
         .mockResolvedValueOnce({ count: '2' }); // Phòng đã thuê
 
       mockContractQueryBuilder.getRawOne.mockResolvedValueOnce({ total: '5000000.00' });
@@ -119,20 +123,21 @@ describe('ReportService', () => {
   });
 
   // ==========================================
-  // 2. BỔ SUNG: TEST SUITE DÀNH CHO ADMIN REPORT
+  // 2. TEST SUITE DÀNH CHO ADMIN REPORT
   // ==========================================
   describe('getAdminReport', () => {
     it('nên trả về thống kê tổng quan toàn bộ hệ thống cho Admin', async () => {
-      // Giả lập dữ liệu tổng quan hệ thống
-      mockUserRepository.count.mockResolvedValue(100);       // 100 người dùng
-      mockRoomRepository.count.mockResolvedValue(50);         // 50 phòng trọ
-      mockContractRepository.count.mockResolvedValue(20);     // 20 hợp đồng đang active
+      mockUserRepository.count.mockResolvedValue(100);
+      mockRoomRepository.count.mockResolvedValue(50);
+      mockContractRepository.count.mockResolvedValue(20);
 
       const result = await service.getAdminReport();
 
       expect(userRepository.count).toHaveBeenCalledTimes(1);
       expect(roomRepository.count).toHaveBeenCalledTimes(1);
-      expect(contractRepository.count).toHaveBeenCalledTimes(1);
+      expect(contractRepository.count).toHaveBeenCalledWith({
+        where: { status: ContractStatus.ACTIVE },
+      });
 
       expect(result).toEqual({
         totalUsers: 100,

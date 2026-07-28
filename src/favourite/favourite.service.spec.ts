@@ -3,7 +3,6 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { FavouriteService } from './favourite.service';
 import { Favourite } from './favourite.entity';
-import { NotFoundException } from '@nestjs/common';
 
 describe('FavouriteService', () => {
   let service: FavouriteService;
@@ -17,7 +16,7 @@ describe('FavouriteService', () => {
     find: jest.fn(),
   };
 
-  beforeEach(jest.fn(async () => {
+  beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         FavouriteService,
@@ -30,10 +29,14 @@ describe('FavouriteService', () => {
 
     service = module.get<FavouriteService>(FavouriteService);
     favouriteRepository = module.get<Repository<Favourite>>(getRepositoryToken(Favourite));
-  }));
+  });
 
   afterEach(() => {
     jest.clearAllMocks();
+  });
+
+  it('should be defined', () => {
+    expect(service).toBeDefined();
   });
 
   describe('toggleFavourite', () => {
@@ -47,8 +50,8 @@ describe('FavouriteService', () => {
       expect(favouriteRepository.findOne).toHaveBeenCalledWith({ where: { userId: 1, roomId: 10 } });
       expect(favouriteRepository.remove).toHaveBeenCalledWith(existingFav);
       expect(result).toEqual({
-        message: 'Đã bỏ lưu phòng trọ khỏi danh sách yêu thích.',
-        isFavorite: false,
+        message: 'Đã xóa khỏi danh sách yêu thích',
+        isFavourite: false,
       });
     });
 
@@ -64,14 +67,14 @@ describe('FavouriteService', () => {
       expect(favouriteRepository.create).toHaveBeenCalledWith({ userId: 1, roomId: 10 });
       expect(favouriteRepository.save).toHaveBeenCalledWith(newFav);
       expect(result).toEqual({
-        message: 'Đã lưu phòng trọ vào danh sách yêu thích.',
-        isFavorite: true,
+        message: 'Đã thêm vào danh sách yêu thích',
+        isFavourite: true,
       });
     });
   });
 
   describe('getMyFavourites', () => {
-    it('nên trả về danh sách chi tiết các phòng trọ đã thích', async () => {
+    it('nên trả về danh sách các bản ghi yêu thích kèm thông tin phòng và ảnh', async () => {
       const mockList = [
         { userId: 1, roomId: 10, room: { id: 10, title: 'Phòng trọ giá rẻ' } },
         { userId: 1, roomId: 11, room: { id: 11, title: 'Phòng trọ cao cấp' } },
@@ -82,12 +85,10 @@ describe('FavouriteService', () => {
 
       expect(favouriteRepository.find).toHaveBeenCalledWith({
         where: { userId: 1 },
-        relations: ['room'],
+        relations: ['room', 'room.images'],
+        order: { createdAt: 'DESC' },
       });
-      expect(result).toEqual([
-        { id: 10, title: 'Phòng trọ giá rẻ' },
-        { id: 11, title: 'Phòng trọ cao cấp' },
-      ]);
+      expect(result).toEqual(mockList);
     });
   });
 });
